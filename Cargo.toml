@@ -1,0 +1,25 @@
+[package]
+name = "tuican"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+can-dbc = "10.0.0"
+clap = { version = "4.6.6", features = ["derive"] }
+crossbeam-channel = "0.5.17"
+crossterm = "0.29.0"
+directories = "6.0.0"
+embedded-can = "0.4.1"
+ratatui = "0.30.2"
+rusb = { version = "0.9.4", features = ["vendored"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serialport = "4.10.0"
+thiserror = "2.0.20"
+toml = "1.1.5"
+tracing = "0.1.44"
+tracing-appender = "0.2.5"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+socketcan = "4.0.0"
