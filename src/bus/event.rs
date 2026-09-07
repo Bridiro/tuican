@@ -18,9 +18,23 @@ pub struct Stats {
 #[derive(Clone, Debug)]
 pub enum Event {
     Rx(Frame, Instant),
-    Connected { spec: TransportSpec, who: String },
+    Connected {
+        spec: TransportSpec,
+        who: String,
+        /// True when this is the link coming back by itself, not a fresh
+        /// connect. The periodic sends were kept and are already running again.
+        resumed: bool,
+    },
     ConnectFailed(String),
-    Disconnected,
+    Disconnected {
+        /// True while the bus is retrying on its own, so the UI can say so and
+        /// keep showing the periodic sends that will resume.
+        retrying: bool,
+    },
+    /// A retry attempt that did not succeed.
+    Reconnecting {
+        attempt: u32,
+    },
     BusError(String),
     Stats(Stats),
 }

@@ -27,8 +27,20 @@ const DRAIN_SLICE: Duration = Duration::from_millis(10);
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 const STATS_EVERY: Duration = Duration::from_millis(200);
 
+/// How soon to try again after the link drops, and the ceiling the backoff
+/// climbs to. The first retry is quick because the common cause is a board
+/// being reset, which re-enumerates within a second or so.
+const FIRST_RETRY: Duration = Duration::from_millis(250);
+const MAX_RETRY: Duration = Duration::from_secs(2);
+
 pub struct Bus {
     transport: Option<Box<dyn Transport>>,
+    /// What we are connected to, or were until the link dropped. Kept so the
+    /// bus can reopen it without the user doing anything.
+    spec: Option<TransportSpec>,
+    retry_at: Option<Instant>,
+    retry_backoff: Duration,
+    retry_count: u32,
     cyclic: Cyclic,
     commands: Receiver<Command>,
     events: Sender<Event>,
@@ -43,6 +55,10 @@ pub fn spawn(commands: Receiver<Command>, events: Sender<Event>) -> JoinHandle<(
         .spawn(move || {
             Bus {
                 transport: None,
+                spec: None,
+                retry_at: None,
+                retry_backoff: FIRST_RETRY,
+                retry_count: 0,
                 cyclic: Cyclic::default(),
                 commands,
                 events,
@@ -58,13 +74,17 @@ pub fn spawn(commands: Receiver<Command>, events: Sender<Event>) -> JoinHandle<(
 impl Bus {
     fn run(mut self) {
         while self.running {
-            // Block only until the next periodic frame is due.
-            let budget = self
-                .cyclic
-                .next_due()
-                .map(|due| due.saturating_duration_since(Instant::now()))
-                .unwrap_or(IDLE_SLICE)
-                .min(IDLE_SLICE);
+            // Block only until there is something to do: the next periodic
+            // frame, or the next reconnect attempt.
+            let now = Instant::now();
+            let mut budget = IDLE_SLICE;
+            if self.transport.is_some() {
+                if let Some(due) = self.cyclic.next_due() {
+                    budget = budget.min(due.saturating_duration_since(now));
+                }
+            } else if let Some(at) = self.retry_at {
+                budget = budget.min(at.saturating_duration_since(now));
+            }
 
             match self.commands.recv_timeout(budget) {
                 Ok(cmd) => {
@@ -75,10 +95,16 @@ impl Bus {
                 Err(RecvTimeoutError::Timeout) => {}
             }
 
-            for (id, data) in self.cyclic.take_due(Instant::now()) {
-                self.transmit(id, &data);
+            if self.transport.is_some() {
+                for (id, data) in self.cyclic.take_due(Instant::now()) {
+                    self.transmit(id, &data);
+                }
+                self.drain();
+            } else {
+                // Periodic sends are deliberately left in place while the link
+                // is down; they resume on their own when it comes back.
+                self.try_reconnect();
             }
-            self.drain();
             self.report();
         }
         // Dropping the transport takes the adapter off the bus.
@@ -107,17 +133,63 @@ impl Bus {
         self.transport = None;
         self.cyclic.clear();
         self.stats = Stats::default();
+        self.retry_at = None;
+        self.retry_backoff = FIRST_RETRY;
+        self.retry_count = 0;
+        self.spec = Some(spec.clone());
 
         match transport::spec::open(&spec) {
             Ok(t) => {
                 let who = t.describe();
                 self.transport = Some(t);
                 tracing::info!(%who, "connected");
-                self.emit(Event::Connected { spec, who });
+                self.emit(Event::Connected { spec, who, resumed: false });
             }
             Err(e) => {
                 tracing::warn!(error = %e, "connect failed");
                 self.emit(Event::ConnectFailed(e.to_string()));
+            }
+        }
+    }
+
+    /// The link went away underneath us. Schedule a retry rather than making
+    /// the user reconnect by hand: the usual cause is a board being reset.
+    fn lost_link(&mut self) {
+        self.transport = None;
+        self.retry_count = 0;
+        self.retry_backoff = FIRST_RETRY;
+        self.retry_at = self.spec.as_ref().map(|_| Instant::now() + FIRST_RETRY);
+        let retrying = self.retry_at.is_some();
+        tracing::warn!(retrying, "link lost");
+        self.emit(Event::Disconnected { retrying });
+    }
+
+    fn try_reconnect(&mut self) {
+        let Some(at) = self.retry_at else { return };
+        if Instant::now() < at {
+            return;
+        }
+        let Some(spec) = self.spec.clone() else {
+            self.retry_at = None;
+            return;
+        };
+        self.retry_count += 1;
+        match transport::spec::open(&spec) {
+            Ok(t) => {
+                let who = t.describe();
+                self.transport = Some(t);
+                self.retry_at = None;
+                self.retry_backoff = FIRST_RETRY;
+                // Stale deadlines would otherwise all come due at once.
+                self.cyclic.rearm(Instant::now());
+                tracing::info!(%who, attempts = self.retry_count, "link restored");
+                self.emit(Event::Connected { spec, who, resumed: true });
+            }
+            Err(e) => {
+                tracing::debug!(error = %e, attempt = self.retry_count, "retry failed");
+                self.retry_backoff = (self.retry_backoff * 2).min(MAX_RETRY);
+                self.retry_at = Some(Instant::now() + self.retry_backoff);
+                self.emit(Event::Reconnecting { attempt: self.retry_count });
             }
         }
     }
@@ -135,9 +207,7 @@ impl Bus {
                 let fatal = matches!(e, transport::TransportError::Disconnected);
                 self.emit(Event::BusError(format!("tx {}: {e}", crate::canid::display(id))));
                 if fatal {
-                    self.transport = None;
-                    self.cyclic.clear();
-                    self.emit(Event::Disconnected);
+                    self.lost_link();
                 }
             }
         }
@@ -155,9 +225,7 @@ impl Bus {
                 }
                 Ok(None) => return,
                 Err(transport::TransportError::Disconnected) => {
-                    self.transport = None;
-                    self.cyclic.clear();
-                    self.emit(Event::Disconnected);
+                    self.lost_link();
                     return;
                 }
                 Err(e) => {
@@ -226,5 +294,54 @@ mod tests {
         // 500 ms at 20 ms is 25; allow generous slack for a loaded CI machine,
         // but "1" must fail.
         assert!(tx >= 10, "only {tx} frames in 500 ms at a 20 ms period");
+    }
+
+    /// The reported bug: resetting the board dropped the link and left the user
+    /// to reconnect by hand. The bus must notice, retry, and pick the periodic
+    /// sends back up on its own.
+    #[test]
+    fn a_dropped_link_comes_back_by_itself_with_its_periodic_sends() {
+        crate::transport::virt::flaky::arm(1);
+        let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
+        let (evt_tx, evt_rx) = crossbeam_channel::unbounded();
+        let handle = spawn(cmd_rx, evt_tx);
+
+        cmd_tx.send(Command::Connect(TransportSpec::Flaky)).unwrap();
+        cmd_tx
+            .send(Command::SetCyclic {
+                key: "M".into(),
+                id: canid::make(0x123, false).unwrap(),
+                data: Payload::new(&[0]),
+                period: Duration::from_millis(10),
+            })
+            .unwrap();
+
+        std::thread::sleep(Duration::from_millis(800));
+        cmd_tx.send(Command::Shutdown).unwrap();
+        handle.join().unwrap();
+
+        let events: Vec<Event> = evt_rx.try_iter().collect();
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, Event::Disconnected { retrying: true })),
+            "never reported the drop as retryable"
+        );
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, Event::Connected { resumed: true, .. })),
+            "never reconnected on its own"
+        );
+        // And the periodic send is running again, not merely reconnected.
+        let tx = events
+            .iter()
+            .filter_map(|e| match e {
+                Event::Stats(s) => Some(s.tx),
+                _ => None,
+            })
+            .max()
+            .unwrap_or(0);
+        assert!(tx > 5, "periodic sends did not resume (tx = {tx})");
     }
 }

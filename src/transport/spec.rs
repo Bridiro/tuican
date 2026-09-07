@@ -18,6 +18,9 @@ pub enum TransportSpec {
     SocketCan { iface: String },
     Slcan { port: String, bitrate: u32 },
     Virtual,
+    /// Drops the link once, to exercise reconnect. Test builds only.
+    #[cfg(test)]
+    Flaky,
 }
 
 impl TransportSpec {
@@ -28,6 +31,8 @@ impl TransportSpec {
             #[cfg(target_os = "linux")]
             Self::SocketCan { .. } => false, // set with `ip link`, not by us
             Self::Virtual => false,
+            #[cfg(test)]
+            Self::Flaky => false,
         }
     }
 
@@ -56,6 +61,8 @@ impl TransportSpec {
             (Self::SocketCan { iface: a }, Self::SocketCan { iface: b }) => a == b,
             (Self::Slcan { port: a, .. }, Self::Slcan { port: b, .. }) => a == b,
             (Self::Virtual, Self::Virtual) => true,
+            #[cfg(test)]
+            (Self::Flaky, Self::Flaky) => true,
             _ => false,
         }
     }
@@ -73,5 +80,7 @@ pub fn open(spec: &TransportSpec) -> Result<Box<dyn Transport>, TransportError> 
             Box::new(super::slcan::Slcan::open(port, *bitrate)?)
         }
         TransportSpec::Virtual => Box::new(super::virt::Loopback::new()),
+        #[cfg(test)]
+        TransportSpec::Flaky => Box::new(super::virt::flaky::Flaky::default()),
     })
 }

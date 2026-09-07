@@ -42,3 +42,50 @@ impl Transport for Loopback {
         "virtual loopback".into()
     }
 }
+
+/// A loopback that drops the link once, so the reconnect path can be tested
+/// without unplugging real hardware. Test builds only.
+#[cfg(test)]
+pub mod flaky {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    use super::*;
+
+    /// How many more times an open transport should fail. Each failure costs
+    /// one, so `arm(1)` reproduces a single board reset.
+    static FAILURES_LEFT: AtomicU32 = AtomicU32::new(0);
+
+    pub fn arm(failures: u32) {
+        FAILURES_LEFT.store(failures, Ordering::SeqCst);
+    }
+
+    #[derive(Default)]
+    pub struct Flaky {
+        sent: u32,
+    }
+
+    impl Transport for Flaky {
+        fn send(&mut self, _frame: &Frame) -> Result<(), TransportError> {
+            self.sent += 1;
+            // Survive a few frames first, so the test sees traffic before the
+            // drop and can tell "never worked" from "worked, then dropped".
+            if self.sent > 3
+                && FAILURES_LEFT
+                    .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1))
+                    .is_ok()
+            {
+                return Err(TransportError::Disconnected);
+            }
+            Ok(())
+        }
+
+        fn recv(&mut self, timeout: Duration) -> Result<Option<Frame>, TransportError> {
+            std::thread::sleep(timeout.min(Duration::from_millis(2)));
+            Ok(None)
+        }
+
+        fn describe(&self) -> String {
+            "flaky test link".into()
+        }
+    }
+}

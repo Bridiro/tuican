@@ -824,6 +824,10 @@ tuican --last                 # reconnect to the previous session and skip both 
 - **Bus error and bus-off state.** SocketCAN surfaces error frames and gs_usb has
   them in its flags. Today both are reported as a line in the error area; a
   bus-off indicator in the header would be worth more.
+- **Editing rules in the TUI.** They are loaded from TOML and reloaded with
+  `F7`; the panel toggles them on and off but does not edit them. A visual graph
+  editor would be a much larger piece of work, and the file round-trips fast
+  enough that it has not been the bottleneck.
 - **Merging several DBCs.** The constraint was one file at a time and that is
   what shipped, but `can-bench.py` merged several. `Database::new` already takes
   a `Vec<MessageDef>`, so this is a merge function that rejects duplicate frame
@@ -838,6 +842,122 @@ tuican --last                 # reconnect to the previous session and skip both 
   500k and 1M, sample points matching SocketCAN's), but no adapter was plugged
   into the machine this was written on. The same goes for `socketcan.rs`, which
   does not even compile on macOS by construction, and `slcan.rs`.
+
+---
+
+## 10. Round two: reacting, reconnecting, and getting around
+
+Four things came out of the first real session on a MacBook with a candleLight
+adapter. Each one changed the architecture in a small, specific way.
+
+### 10.1 The link comes back on its own
+
+Resetting the board dropped the USB device, and the tool left the user to
+reconnect by hand. The bus thread now keeps the `TransportSpec` it opened, and a
+fatal error routes through `lost_link()` rather than clearing everything:
+
+```rust
+fn lost_link(&mut self) {
+    self.transport = None;                       // closes the adapter
+    self.retry_backoff = FIRST_RETRY;            // 250 ms, doubling to 2 s
+    self.retry_at = self.spec.as_ref().map(|_| Instant::now() + FIRST_RETRY);
+    self.emit(Event::Disconnected { retrying: self.retry_at.is_some() });
+}
+```
+
+The periodic sends are deliberately **not** cleared. They are held, and
+`Cyclic::rearm` restarts their schedules from the moment the link returns, so
+they resume at their own rate rather than all firing at once to catch up. The
+run loop simply does not call `take_due` while the transport is `None`, which is
+also what stops a "not connected" error per frame per entry.
+
+One detail matters more than the retry loop: a board that has just been reset
+re-enumerates at a **different USB address**. Locating it by bus and address, as
+the first version did, is precisely what fails. `GsUsb::open` now filters by
+vendor and product id first and prefers the original slot within that set, so it
+finds the same adapter wherever it came back.
+
+`Event::Connected` carries `resumed: bool`. A fresh connect clears the periodic
+sends; a resumed one does not.
+
+### 10.2 Rules: a graph, not a script
+
+The ask was "change this message to this if this message changes to that", and
+chained "also in parallel, not only series, like a graph of interactions".
+
+Two decisions make that a graph rather than a list:
+
+1. **Rules are independent and all are evaluated.** Any number can react to the
+   same frame. That is the parallel case, and it falls out of not stopping at
+   the first match.
+2. **A condition can read a signal we are transmitting** (`source = "tx"`), not
+   only one arriving from the bus. One rule's action then satisfies another
+   rule's condition. `App::run_rules` re-evaluates until nothing new fires, so
+   the chain completes within a single tick instead of one link per frame.
+
+```rust
+for pass in 0..rules::MAX_PASSES {
+    let fired = self.rules.pass(&self.rx, &self.values);
+    if fired.is_empty() { self.rules.looped = false; return; }
+    for (name, actions) in fired {
+        for act in actions { self.apply_act(&name, &act); }
+    }
+    if pass + 1 == rules::MAX_PASSES { /* a cycle: say so, stop */ }
+}
+```
+
+Cascading and cycles are the same mechanism, so the pass cap is not optional.
+Two rules that flip each other's value never settle, and a test asserts the
+evaluation terminates and reports rather than eating the frame budget.
+
+Rules fire on the **rising edge**. Without `Rule::holding`, a rule watching
+`state == 2` would fire on every frame for as long as the state stayed at 2,
+which is not what "if this message changes to that" means.
+
+Evaluation lives on the UI side, like decoding, because it needs decoded signal
+values and the transmit-side state. The bus thread still knows nothing about a
+DBC. `RxRow` gained a `values: HashMap<String, f64>` so conditions have numbers
+to compare rather than the formatted display string.
+
+Names are resolved against the DBC at load time. A rule naming a signal that
+does not exist would otherwise never fire and never explain itself, so each
+broken rule carries its own `warning` and shows as `bad` in red in the panel.
+
+### 10.3 Two panels sharing one band
+
+The one-line cyclic strip could only fit names. `F5` opens a real panel with the
+id, period, count and the bytes actually going out; `F6` does the same for the
+rules. Both are focusable panes, but only while open:
+
+```rust
+pub fn panes(&self) -> Vec<Pane> {
+    Pane::ALL.into_iter().filter(|p| match p {
+        Pane::Cyclic => self.show_cyclic_panel,
+        Pane::Rules => self.show_rules_panel,
+        _ => true,
+    }).collect()
+}
+```
+
+They share one band below the receive table, side by side above 120 columns and
+stacked below it, which is the same width-driven rule the top panes already use.
+
+Building this surfaced a latent rendering bug: the receive pane drew its column
+header *over* the first row of its own list, hiding an entry whenever the list
+was full. Header and body now get separate rects from `with_header`, and the
+three parts of such a pane never share a row.
+
+### 10.4 Motions and the filter
+
+`j`, `k`, `gg`, `G`, `42G`, `5j`, `ctrl-d`/`u`/`f`/`b`, and `H`/`M`/`L`. Counts
+and the `gg` prefix need state that a pure `KeyEvent -> Action` mapping does not
+have, so `input::map` now also takes the pending state, and the reducer owns the
+count. `h` and `l` switch panes: there is no horizontal cursor for them to move,
+and pane switching is what a hand on `hjkl` wants next.
+
+`/` now clears the previous filter instead of pre-filling it, because
+re-filtering was cancelling and retyping every time. `esc` restores what was
+there, so an accidental `/` is not destructive.
 
 ---
 

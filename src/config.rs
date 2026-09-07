@@ -12,12 +12,13 @@ pub struct Config {
     pub interface: Option<TransportSpec>,
     pub bitrate: u32,
     pub dbc: Option<PathBuf>,
+    pub rules: Option<PathBuf>,
     pub mouse: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self { interface: None, bitrate: 500_000, dbc: None, mouse: true }
+        Self { interface: None, bitrate: 500_000, dbc: None, rules: None, mouse: true }
     }
 }
 

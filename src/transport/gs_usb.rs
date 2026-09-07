@@ -185,11 +185,24 @@ impl GsUsb {
         pid: u16,
         bitrate: u32,
     ) -> Result<Self, TransportError> {
-        let device = rusb::devices()
-            .map_err(usb_err)?
+        // Match on vendor/product, preferring the exact slot we were given.
+        // A board that has just been reset comes back at a different address,
+        // and the old one may since have been handed to something else, so
+        // neither "the same slot" nor "the same ids" is sufficient alone.
+        let devices = rusb::devices().map_err(usb_err)?;
+        let matching: Vec<_> = devices
+            .iter()
+            .filter(|d| {
+                d.device_descriptor()
+                    .is_ok_and(|desc| desc.vendor_id() == vid && desc.product_id() == pid)
+            })
+            .collect();
+        let device = matching
             .iter()
             .find(|d| d.bus_number() == bus && d.address() == address)
-            .ok_or_else(|| TransportError::NotFound(describe_ids(vid, pid)))?;
+            .or_else(|| matching.first())
+            .ok_or_else(|| TransportError::NotFound(describe_ids(vid, pid)))?
+            .clone();
 
         let handle = device.open().map_err(usb_err)?;
         // Linux only; everywhere else this is a no-op and the error is expected.

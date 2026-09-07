@@ -12,6 +12,24 @@ use crate::dbc::mux;
 use crate::ui::layout::{clip, elide};
 use crate::ui::theme;
 
+/// Draw a pane that has a column header: the title bar, the header, and the
+/// body, each in its own rect.
+///
+/// Rendering a header *over* a list that already occupies the row silently
+/// hides the list's first item, so the three never share a row here.
+fn with_header(f: &mut Frame, area: Rect, title: String, active: bool, header: &str) -> Rect {
+    f.render_widget(block(title, active), area);
+    if area.height < 2 {
+        return Rect { height: 0, ..area };
+    }
+    let header_row = Rect { y: area.y + 1, height: 1, ..area };
+    f.render_widget(
+        Paragraph::new(clip(header, area.width as usize)).style(theme::dim()),
+        header_row,
+    );
+    Rect { y: area.y + 2, height: area.height.saturating_sub(2), ..area }
+}
+
 fn block(title: String, active: bool) -> Block<'static> {
     Block::default()
         .borders(Borders::TOP)
@@ -22,6 +40,7 @@ fn block(title: String, active: bool) -> Block<'static> {
 pub fn header(f: &mut Frame, area: Rect, app: &App) {
     let link = match app.link {
         Link::Up => format!(" ● {} ", app.link_label),
+        Link::Retrying => format!(" ◐ {} ", app.link_label),
         Link::Down => " ○ not connected ".to_string(),
     };
     // Least important last: a narrow terminal drops fields off the end rather
@@ -218,7 +237,7 @@ pub fn rx(f: &mut Frame, area: Rect, app: &App) {
     );
 }
 
-pub fn cyclic(f: &mut Frame, area: Rect, app: &App) {
+pub fn cyclic_strip(f: &mut Frame, area: Rect, app: &App) {
     let text = if app.stats.cyclic.is_empty() {
         " cyclic: none".to_string()
     } else {
@@ -231,6 +250,130 @@ pub fn cyclic(f: &mut Frame, area: Rect, app: &App) {
         format!(" cyclic: {}", parts.join(", "))
     };
     f.render_widget(Paragraph::new(clip(&text, area.width as usize)).style(theme::dim()), area);
+}
+
+/// The periodic sends in full: what is going out, how fast, and how many have
+/// gone. The strip above only has room for names.
+pub fn cyclic_panel(f: &mut Frame, area: Rect, app: &App) {
+    let active = app.pane == Pane::Cyclic;
+    let width = area.width as usize;
+    let counts: std::collections::HashMap<&str, u64> = app
+        .stats
+        .cyclic
+        .iter()
+        .map(|(name, count)| (name.as_str(), *count))
+        .collect();
+
+    let header = format!(
+        "  {:<28} {:>10} {:>9} {:>8}  {}",
+        "message", "id", "period", "sent", "data"
+    );
+    let inner = area.height.saturating_sub(2) as usize;
+    let items: Vec<ListItem> = app
+        .cyclic
+        .iter()
+        .enumerate()
+        .skip(app.cyclic_scroll.offset)
+        .take(inner)
+        .map(|(i, (name, entry))| {
+            let text = format!(
+                "  {:<28} {:>10} {:>7.0}ms {:>8}  {}",
+                elide(name, 28),
+                canid::display(entry.id),
+                entry.period.as_secs_f64() * 1000.0,
+                counts.get(name.as_str()).copied().unwrap_or(0),
+                entry.data.hex(),
+            );
+            let style = if i == app.cyclic_index {
+                theme::selected(active)
+            } else {
+                theme::accent()
+            };
+            ListItem::new(Line::from(Span::styled(clip(&text, width), style)))
+        })
+        .collect();
+
+    let title = format!("cyclic  {} running", app.cyclic.len());
+    let body = with_header(f, area, title, active, &header);
+    if app.cyclic.is_empty() {
+        f.render_widget(
+            Paragraph::new("  nothing running — select a message and press p").style(theme::dim()),
+            body,
+        );
+    } else {
+        f.render_widget(List::new(items), body);
+    }
+}
+
+/// The reaction rules: what each one watches, whether it is armed, and how
+/// many times it has fired.
+pub fn rules_panel(f: &mut Frame, area: Rect, app: &App) {
+    let active = app.pane == Pane::Rules;
+    let width = area.width as usize;
+    let header = format!("  {:<3} {:<26} {:>7} {:>6}  {}", "on", "rule", "state", "fired", "when");
+
+    let inner = area.height.saturating_sub(2) as usize;
+    let items: Vec<ListItem> = app
+        .rules
+        .rules
+        .iter()
+        .enumerate()
+        .skip(app.rules_scroll.offset)
+        .take(inner)
+        .map(|(i, rule)| {
+            let state = if rule.warning.is_some() {
+                "bad"
+            } else if !rule.enabled {
+                "off"
+            } else if rule.holding {
+                // Condition currently true: it has fired and is waiting for the
+                // condition to fall before it can fire again.
+                "held"
+            } else {
+                "armed"
+            };
+            let text = format!(
+                "  {:<3} {:<26} {:>7} {:>6}  {}",
+                if rule.enabled { "[x]" } else { "[ ]" },
+                elide(&rule.name, 26),
+                state,
+                rule.fired,
+                rule.warning.clone().unwrap_or_else(|| rule.summary()),
+            );
+            let style = if i == app.rules_index {
+                theme::selected(active)
+            } else if rule.warning.is_some() {
+                theme::error()
+            } else if !rule.enabled {
+                theme::dim()
+            } else if rule.holding {
+                theme::accent()
+            } else {
+                theme::normal()
+            };
+            ListItem::new(Line::from(Span::styled(clip(&text, width), style)))
+        })
+        .collect();
+
+    let bad = app.rules.rules.iter().filter(|r| r.warning.is_some()).count();
+    let title = if bad > 0 {
+        format!(
+            "rules  {}  ({bad} need{} attention)",
+            app.rules.label(),
+            if bad == 1 { "s" } else { "" }
+        )
+    } else {
+        format!("rules  {}", app.rules.label())
+    };
+    let body = with_header(f, area, title, active, &header);
+    if app.rules.rules.is_empty() {
+        f.render_widget(
+            Paragraph::new("  no rules loaded — start with --rules FILE").style(theme::dim()),
+            body,
+        );
+    } else {
+        f.render_widget(List::new(items), body);
+    }
 }
 
 pub fn status(f: &mut Frame, area: Rect, app: &App) {
@@ -248,9 +391,11 @@ pub fn hints(f: &mut Frame, area: Rect, app: &App) {
     let mouse = if app.mouse { "mouse:on" } else { "mouse:off" };
     let full = format!(
         " tab pane · / filter · ⏎ edit · s send · p cyclic · x stop · r raw · c clear · \
-         F3 dbc · F4 iface · F2 {mouse} · ? help · q quit "
+         F3 dbc · F4 iface · F5 cyclic · F6 rules · F2 {mouse} · ? help · q quit "
     );
-    let short = format!(" tab · / · ⏎ · s · p · x · r · c · F3 · F4 · ? · q  [{mouse}] ");
+    let short = format!(
+        " tab · / · ⏎ · s · p · x · r · c · F3 · F4 · F5 · F6 · ? · q  [{mouse}] "
+    );
     let text = if full.len() <= area.width as usize { full } else { short };
     f.render_widget(
         Paragraph::new(format!("{text:<width$}", width = area.width as usize))
@@ -315,27 +460,38 @@ pub fn picker(f: &mut Frame, area: Rect, picker: &Picker) {
 }
 
 const KEYS: &[(&str, &str)] = &[
-    ("tab / shift-tab", "move between panes"),
-    ("↑ ↓  k j", "move within a pane"),
-    ("pgup / pgdn, g / G", "page, top, bottom"),
-    ("/", "filter messages by name or hex id"),
-    ("enter", "edit the selected signal"),
+    ("tab / shift-tab, h l", "move between panes"),
+    ("j k, ↑ ↓", "move within a pane"),
+    ("5j, 12k", "repeat a motion"),
+    ("gg / G / 42G", "top, bottom, that row"),
+    ("ctrl-d / ctrl-u", "half page down / up"),
+    ("ctrl-f / ctrl-b", "page down / up"),
+    ("H / M / L", "top, middle, bottom of the screen"),
+    ("/", "filter messages (starts empty each time)"),
+    ("enter", "edit signal, or act on the panel row"),
     ("s", "send the selected message once"),
     ("p", "start or stop sending it periodically"),
+    ("d", "stop the periodic send under the cursor"),
     ("x", "stop every periodic send"),
     ("r", "raw send, e.g.  4E5 11 22 33"),
     ("c", "clear the receive table"),
     ("F2", "mouse on/off (off restores text selection)"),
-    ("F3", "load a different DBC, keeping the link"),
-    ("F4", "connect to a different interface"),
+    ("F3 / F4", "change DBC / change interface"),
+    ("F5 / F6", "cyclic panel / rules panel"),
+    ("F7", "reload the rules file"),
     ("q", "quit"),
 ];
 
+/// Width of the key column: the widest key plus a gap, so a long binding
+/// cannot run into its own description.
+fn key_column() -> usize {
+    KEYS.iter().map(|(key, _)| key.chars().count()).max().unwrap_or(0) + 2
+}
+
 /// Sized from the content, so the box has no dead rows and clips nothing.
 pub fn help_size() -> (u16, u16) {
-    const KEY_COLUMN: usize = 20;
     let widest = KEYS.iter().map(|(_, what)| what.chars().count()).max().unwrap_or(0);
-    ((KEY_COLUMN + widest + 4) as u16, KEYS.len() as u16 + 2)
+    ((key_column() + widest + 4) as u16, KEYS.len() as u16 + 2)
 }
 
 pub fn help(f: &mut Frame, area: Rect) {
@@ -343,7 +499,7 @@ pub fn help(f: &mut Frame, area: Rect) {
         .iter()
         .map(|(key, what)| {
             Line::from(vec![
-                Span::styled(format!(" {key:<20}"), theme::accent()),
+                Span::styled(format!(" {key:<width$}", width = key_column()), theme::accent()),
                 Span::raw((*what).to_string()),
             ])
         })

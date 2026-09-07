@@ -54,6 +54,8 @@ mod tests {
             messages: Rect::new(0, 1, 38, 10),
             signals: Rect::new(38, 1, 42, 10),
             rx: Rect::new(0, 11, 80, 10),
+            cyclic: Rect::ZERO,
+            rules: Rect::ZERO,
         }
     }
 

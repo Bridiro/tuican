@@ -37,6 +37,15 @@ impl Cyclic {
         self.entries.clear();
     }
 
+    /// Restart every schedule from `now`. Used when a dropped link comes back:
+    /// the stale deadlines would otherwise all fire at once.
+    pub fn rearm(&mut self, now: Instant) {
+        for entry in self.entries.values_mut() {
+            entry.next = now;
+        }
+    }
+
+
     pub fn next_due(&self) -> Option<Instant> {
         self.entries.values().map(|e| e.next).min()
     }

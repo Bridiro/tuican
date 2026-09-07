@@ -10,6 +10,7 @@ mod canid;
 mod cli;
 mod config;
 mod dbc;
+mod rules;
 mod transport;
 mod ui;
 
@@ -97,7 +98,19 @@ fn plan_startup(app: &mut App, args: &cli::Cli) -> Startup {
         app.load_dbc(&path);
     }
 
-    // 2. An interface, if the arguments fully describe one.
+    // 2. Rules, once the DBC is in place: loading them second is what lets the
+    //    loader check every message and signal name against it.
+    let rules = args
+        .rules
+        .clone()
+        .or_else(|| args.last.then(|| app.config.rules.clone()).flatten())
+        .filter(|p| p.is_file())
+        .or_else(|| rules::load::discover(app.config.dbc.as_deref()));
+    if let Some(path) = rules {
+        app.load_rules(&path);
+    }
+
+    // 3. An interface, if the arguments fully describe one.
     let spec = spec_from_args(args).or_else(|| {
         args.last
             .then(|| app.config.interface.clone())
@@ -158,11 +171,14 @@ fn run(
         while let Ok(event) = events.try_recv() {
             app.on_bus_event(event);
         }
+        // Rules see the batch as one state, so a rule that watches two messages
+        // does not fire on a half-updated picture.
+        app.run_rules();
 
         while poll(Duration::ZERO)? {
             match read()? {
                 CEvent::Key(k) if k.kind == KeyEventKind::Press => {
-                    let action = ui::input::map(k, &app.mode);
+                    let action = ui::input::map(k, &app.mode, app.pending);
                     app.update(action);
                 }
                 CEvent::Mouse(m) if app.mouse => {

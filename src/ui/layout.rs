@@ -12,6 +12,8 @@ pub struct LayoutMap {
     pub messages: Rect,
     pub signals: Rect,
     pub rx: Rect,
+    pub cyclic: Rect,
+    pub rules: Rect,
 }
 
 impl LayoutMap {
@@ -20,6 +22,8 @@ impl LayoutMap {
             Pane::Messages => self.messages,
             Pane::Signals => self.signals,
             Pane::Rx => self.rx,
+            Pane::Cyclic => self.cyclic,
+            Pane::Rules => self.rules,
         }
     }
 }
@@ -34,21 +38,49 @@ pub struct Frames {
     pub messages: Rect,
     pub signals: Rect,
     pub rx: Rect,
-    pub cyclic: Rect,
+    /// Hosts the periodic-send and rules panels when either is open, otherwise
+    /// it is the one-line summary strip.
+    pub band: Rect,
     pub status: Rect,
     pub hints: Rect,
 }
 
+/// Height a bottom panel wants for `rows` entries: a title, a column header,
+/// and the rows, capped so it never crowds out the receive table.
+pub fn panel_height(rows: usize) -> u16 {
+    (rows as u16 + 2).clamp(3, 9)
+}
+
+/// Share the bottom band between the two panels. Side by side when there is
+/// room for both, stacked when there is not.
+pub fn split_band(band: Rect, cyclic: bool, rules: bool) -> (Rect, Rect) {
+    match (cyclic, rules) {
+        (true, true) if band.width >= 120 => {
+            let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(band);
+            (cols[0], cols[1])
+        }
+        (true, true) => {
+            let rows = Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(band);
+            (rows[0], rows[1])
+        }
+        (true, false) => (band, Rect::ZERO),
+        (false, true) => (Rect::ZERO, band),
+        (false, false) => (Rect::ZERO, Rect::ZERO),
+    }
+}
+
 /// Split the terminal. The top two panes sit side by side when there is room
 /// and stack when there is not, rather than being squeezed into uselessness.
-pub fn split(area: Rect) -> Frames {
+pub fn split(area: Rect, band_height: u16) -> Frames {
     let rows = Layout::vertical([
-        Constraint::Length(1), // header
-        Constraint::Percentage(45), // messages | signals
-        Constraint::Min(4),    // receive — absorbs the slack
-        Constraint::Length(1), // cyclic strip
-        Constraint::Length(1), // status / last error
-        Constraint::Length(1), // key hints
+        Constraint::Length(1),          // header
+        Constraint::Percentage(45),     // messages | signals
+        Constraint::Min(4),             // receive — absorbs the slack
+        Constraint::Length(band_height), // one-line strip, or the panels
+        Constraint::Length(1),          // status / last error
+        Constraint::Length(1),          // key hints
     ])
     .split(area);
 
@@ -66,7 +98,7 @@ pub fn split(area: Rect) -> Frames {
         messages: top[0],
         signals: top[1],
         rx: rows[2],
-        cyclic: rows[3],
+        band: rows[3],
         status: rows[4],
         hints: rows[5],
     }
@@ -166,8 +198,37 @@ mod tests {
 
     #[test]
     fn a_tiny_terminal_still_produces_valid_rects() {
-        let f = split(Rect::new(0, 0, MIN_WIDTH, MIN_HEIGHT));
+        let f = split(Rect::new(0, 0, MIN_WIDTH, MIN_HEIGHT), 1);
         assert!(f.rx.height >= 1);
         assert!(f.messages.width > 0 && f.signals.width > 0);
+    }
+
+    #[test]
+    fn both_panels_share_the_band_and_stack_when_narrow() {
+        let wide = Rect::new(0, 20, 160, 8);
+        let (c, r) = split_band(wide, true, true);
+        assert_eq!(c.height, 8);
+        assert_eq!(r.height, 8);
+        assert!(c.width > 0 && r.width > 0 && c.x != r.x);
+
+        let narrow = Rect::new(0, 20, 90, 8);
+        let (c, r) = split_band(narrow, true, true);
+        assert_eq!(c.width, 90);
+        assert!(c.y != r.y, "narrow terminals stack instead of squeezing");
+
+        let (c, r) = split_band(wide, true, false);
+        assert_eq!(c, wide);
+        assert_eq!(r, Rect::ZERO);
+    }
+
+    #[test]
+    fn the_cyclic_panel_takes_its_space_from_the_receive_table() {
+        let area = Rect::new(0, 0, 120, 30);
+        let strip = split(area, 1);
+        let panel = split(area, panel_height(4));
+        assert_eq!(panel.band.height, 6);
+        assert!(panel.rx.height < strip.rx.height);
+        // The message panes keep their share either way.
+        assert_eq!(panel.messages.height, strip.messages.height);
     }
 }

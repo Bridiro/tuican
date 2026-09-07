@@ -16,6 +16,11 @@ pub struct Cli {
     #[arg(long, value_name = "FILE")]
     pub dbc: Option<PathBuf>,
 
+    /// Reaction rules to load. Without it, tuican looks for
+    /// `tuican.rules.toml` beside the DBC and in the working directory.
+    #[arg(long, value_name = "FILE")]
+    pub rules: Option<PathBuf>,
+
     /// Adapter to use: gs_usb, socketcan, slcan, or virtual.
     #[arg(long, value_name = "KIND")]
     pub interface: Option<String>,
