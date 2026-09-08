@@ -178,10 +178,8 @@ not yet exercised them against hardware. Reports welcome.
 
 ## AI assistance
 
-Most of this code was written by Claude (Anthropic's Claude Code), working from
-my design decisions and feedback across several sessions. I directed the work,
-reviewed the changes, and did the hardware testing. It is stated here so you can
-weigh the code on that basis rather than find out later.
+During development, I made use of AI tools significantly on the interface and rules feature,
+with help on the rest of the codebase as well. I state this here for transparency.
 
 ## License
 
