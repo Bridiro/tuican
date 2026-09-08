@@ -25,7 +25,13 @@ impl Cyclic {
         let count = self.entries.get(&key).map_or(0, |e| e.count);
         self.entries.insert(
             key,
-            Entry { id, data, period, next: Instant::now(), count },
+            Entry {
+                id,
+                data,
+                period,
+                next: Instant::now(),
+                count,
+            },
         );
     }
 
@@ -44,7 +50,6 @@ impl Cyclic {
             entry.next = now;
         }
     }
-
 
     pub fn next_due(&self) -> Option<Instant> {
         self.entries.values().map(|e| e.next).min()
@@ -66,6 +71,9 @@ impl Cyclic {
     }
 
     pub fn counts(&self) -> Vec<(String, u64)> {
-        self.entries.iter().map(|(k, e)| (k.clone(), e.count)).collect()
+        self.entries
+            .iter()
+            .map(|(k, e)| (k.clone(), e.count))
+            .collect()
     }
 }

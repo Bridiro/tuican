@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="tuican">
+  <defs>
+    <linearGradient id="beak" x1="0.1" y1="0" x2="0.85" y2="0.8">
+      <stop offset="0" stop-color="#7BF3B4"/>
+      <stop offset="0.5" stop-color="#22C48A"/>
+      <stop offset="1" stop-color="#0A7F58"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#63A8FF"/>
+      <stop offset="1" stop-color="#1740C4"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0B1220"/>
+  <g transform="translate(64,64) scale(0.9) translate(-63,-66)">
+  <path d="M40 16 C61 16 71 36 71 58 C71 90 57 116 35 116 C15 116 4 93 4 66 C4 37 19 16 40 16 Z" fill="url(#body)"/>
+  <path d="M50 84 C50 98 44 110 35 116 C25 113 18 105 14 95 C29 95 42 91 50 84 Z" fill="#1FBF86" opacity="0.9"/>
+  <path d="M49 28 C79 21 108 37 122 70 C103 79 74 82 49 76 C56 61 56 43 49 28 Z" fill="url(#beak)"/>
+  <path d="M50 58 C76 57 101 61 122 70 C99 68 74 65 50 63 Z" fill="#06301F" opacity="0.5"/>
+  <path d="M49 28 C56 43 56 61 49 76 C43 60 43 44 49 28 Z" fill="#0B1220" opacity="0.2"/>
+  <circle cx="40" cy="45" r="10.5" fill="#0B1220"/>
+  <circle cx="42.4" cy="42.6" r="4.2" fill="#EAF2FF"/>
+  </g>
+</svg>

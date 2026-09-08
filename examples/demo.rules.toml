@@ -1,0 +1,100 @@
+# tuican reaction rules, written against examples/demo.dbc.
+#
+# Try it with no hardware at all:
+#
+#   tuican --dbc examples/demo.dbc --rules examples/demo.rules.toml --interface virtual
+#
+# The virtual interface is a loopback, so anything you send comes back as
+# receive traffic and the rules below react to it. Send MotorStatus with
+# ready = 1 and watch MotorCommand start going out by itself.
+#
+# Copy this next to your own DBC as `tuican.rules.toml` and tuican finds it, or
+# pass it with `--rules FILE`. F7 reloads without restarting, F6 shows the panel.
+#
+# A rule watches signals and, when its condition becomes true, does something.
+# Rules fire on the rising edge, so a rule watching `state == 2` fires once when
+# the state reaches 2, not on every frame while it stays there.
+#
+# Rules are independent, so several can react to the same frame. A rule can also
+# watch a signal you are sending (`source = "tx"`), letting one rule's action
+# satisfy another rule's condition in the same tick.
+
+# Two rules reacting to the same incoming signal, independently.
+
+[[rule]]
+name = "enable on ready"
+all = [
+  { message = "MotorStatus", signal = "ready", op = "eq", value = 1 },
+]
+then = [
+  { action = "set", message = "MotorCommand", signal = "enable", value = 1 },
+  { action = "cyclic", message = "MotorCommand", period_ms = 10 },
+]
+
+[[rule]]
+name = "clear the fault latch"
+all = [
+  { message = "MotorStatus", signal = "state", op = "eq", value = 3 },
+]
+then = [
+  { action = "set", message = "MotorCommand", signal = "resetFault", value = 1 },
+]
+
+# This one watches what the first rule sends, so it runs in the same tick.
+
+[[rule]]
+name = "raise the speed limit"
+all = [
+  { source = "tx", message = "MotorCommand", signal = "enable", op = "eq", value = 1 },
+]
+then = [
+  { action = "set", message = "MotorCommand", signal = "speedLimit", value = 6000 },
+]
+
+# Back off on temperature, using a threshold rather than an exact value.
+
+[[rule]]
+name = "derate when the pack is hot"
+all = [
+  { message = "BatteryStatus", signal = "cellTempMax", op = "ge", value = 55 },
+]
+then = [
+  { action = "set", message = "MotorCommand", signal = "torqueRequest", value = 50 },
+]
+
+# The falling edge, to shut things down again.
+
+[[rule]]
+name = "stop when not ready"
+all = [
+  { message = "MotorStatus", signal = "ready", op = "eq", value = 0 },
+]
+then = [
+  { action = "stop", message = "MotorCommand" },
+]
+
+# Other things you can write:
+#
+# `any` holds when at least one of its conditions does; combine it with `all`.
+# `op = "changed"` fires on any change of value, whatever it changed to.
+# `enabled = false` loads a rule switched off; enter toggles it in the panel.
+#
+# [[rule]]
+# name = "acknowledge a heartbeat"
+# enabled = false
+# all = [{ message = "Heartbeat", signal = "alive", op = "eq", value = 1 }]
+# any = [
+#   { message = "Heartbeat", signal = "counter", op = "changed" },
+#   { message = "MotorStatus", signal = "temperature", op = "gt", value = 80 },
+# ]
+# then = [{ action = "send", message = "MotorCommand" }]
+#
+# Operators: eq, ne, lt, le, gt, ge, changed.
+# Actions:   set (message, signal, value)
+#            send (message)
+#            cyclic (message, period_ms)
+#            stop (message)
+#
+# Names are checked against the loaded DBC when the file loads. Anything the
+# DBC does not define is flagged in the rules panel rather than silently never
+# matching.

@@ -1,6 +1,6 @@
 //! candleLight / gs_usb over libusb.
 //!
-//! This is the only transport that works on macOS — there is no kernel driver
+//! This is the only transport that works on macOS: there is no kernel driver
 //! for these adapters there, so libusb claims the interface directly. On Linux
 //! the same devices are usually already bound to `gs_usb.ko` and exposed as a
 //! SocketCAN interface; we detach the kernel driver rather than fight it, but
@@ -103,9 +103,15 @@ pub struct BitTiming {
 impl BitTiming {
     fn to_le_bytes(self) -> [u8; 20] {
         let mut out = [0u8; 20];
-        for (i, v) in [self.prop_seg, self.phase_seg1, self.phase_seg2, self.sjw, self.brp]
-            .into_iter()
-            .enumerate()
+        for (i, v) in [
+            self.prop_seg,
+            self.phase_seg1,
+            self.phase_seg2,
+            self.sjw,
+            self.brp,
+        ]
+        .into_iter()
+        .enumerate()
         {
             out[i * 4..i * 4 + 4].copy_from_slice(&v.to_le_bytes());
         }
@@ -157,7 +163,10 @@ impl BitTiming {
                         sjw: bt.sjw_max.min(tseg2).max(1),
                         brp,
                     };
-                    if best.as_ref().is_none_or(|(e, s, _)| (err, sp_err) < (*e, *s)) {
+                    if best
+                        .as_ref()
+                        .is_none_or(|(e, s, _)| (err, sp_err) < (*e, *s))
+                    {
                         best = Some((err, sp_err, cand));
                     }
                 }
@@ -165,7 +174,8 @@ impl BitTiming {
             brp += bt.brp_inc;
         }
         // Reject anything worse than 0.5%: a bus at that error will not stay up.
-        best.filter(|(err, _, _)| *err <= 5_000_000).map(|(_, _, t)| t)
+        best.filter(|(err, _, _)| *err <= 5_000_000)
+            .map(|(_, _, t)| t)
     }
 }
 
@@ -215,7 +225,12 @@ impl GsUsb {
             .and_then(|d| handle.read_product_string_ascii(&d).ok())
             .unwrap_or_else(|| describe_ids(vid, pid));
 
-        let mut me = Self { handle, name, bitrate, echo_seq: 0 };
+        let mut me = Self {
+            handle,
+            name,
+            bitrate,
+            echo_seq: 0,
+        };
         me.configure(bitrate)?;
         Ok(me)
     }
@@ -223,7 +238,14 @@ impl GsUsb {
     fn configure(&mut self, bitrate: u32) -> Result<(), TransportError> {
         // 1. Tell the firmware our byte order.
         self.handle
-            .write_control(RT_OUT, BREQ_HOST_FORMAT, 1, 0, &HOST_MAGIC.to_le_bytes(), CTRL_TIMEOUT)
+            .write_control(
+                RT_OUT,
+                BREQ_HOST_FORMAT,
+                1,
+                0,
+                &HOST_MAGIC.to_le_bytes(),
+                CTRL_TIMEOUT,
+            )
             .map_err(usb_err)?;
 
         // 2. Ask what it can do, and solve for the requested bitrate.
@@ -235,7 +257,14 @@ impl GsUsb {
         let timing = BitTiming::solve(&bt, bitrate).ok_or(TransportError::Bitrate(bitrate))?;
         tracing::info!(?bt, ?timing, bitrate, "gs_usb bit timing");
         self.handle
-            .write_control(RT_OUT, BREQ_BITTIMING, 0, 0, &timing.to_le_bytes(), CTRL_TIMEOUT)
+            .write_control(
+                RT_OUT,
+                BREQ_BITTIMING,
+                0,
+                0,
+                &timing.to_le_bytes(),
+                CTRL_TIMEOUT,
+            )
             .map_err(usb_err)?;
 
         // 3. Go.
@@ -268,7 +297,10 @@ impl Transport for GsUsb {
         buf[9] = 0; // channel
         buf[12..12 + frame.data.len()].copy_from_slice(&frame.data);
 
-        match self.handle.write_bulk(EP_OUT, &buf, Duration::from_millis(500)) {
+        match self
+            .handle
+            .write_bulk(EP_OUT, &buf, Duration::from_millis(500))
+        {
             Ok(_) => Ok(()),
             Err(rusb::Error::NoDevice) => Err(TransportError::Disconnected),
             Err(e) => Err(usb_err(e)),
@@ -302,7 +334,12 @@ impl Drop for GsUsb {
 }
 
 fn packed_id(id: embedded_can::Id) -> u32 {
-    canid::raw(id) | if canid::is_extended(id) { CAN_EFF_FLAG } else { 0 }
+    canid::raw(id)
+        | if canid::is_extended(id) {
+            CAN_EFF_FLAG
+        } else {
+            0
+        }
 }
 
 fn parse_host_frame(b: &[u8]) -> Option<Frame> {
@@ -313,7 +350,11 @@ fn parse_host_frame(b: &[u8]) -> Option<Frame> {
     }
     let dlc = (b[8] as usize).min(8);
     let id = canid::make(can_id & 0x1FFF_FFFF, can_id & CAN_EFF_FLAG != 0)?;
-    let data = if can_id & CAN_RTR_FLAG != 0 { &[][..] } else { &b[12..12 + dlc] };
+    let data = if can_id & CAN_RTR_FLAG != 0 {
+        &[][..]
+    } else {
+        &b[12..12 + dlc]
+    };
     Some(Frame {
         id,
         data: Payload::new(data),
@@ -326,7 +367,7 @@ fn usb_err(e: rusb::Error) -> TransportError {
         rusb::Error::Access => TransportError::Permission(PERMISSION_HINT.into()),
         rusb::Error::NoDevice => TransportError::Disconnected,
         rusb::Error::Busy => TransportError::Permission(
-            "the device is claimed by another program (or by gs_usb.ko — use SocketCAN instead)"
+            "the device is claimed by another program (or by gs_usb.ko, use SocketCAN instead)"
                 .into(),
         ),
         other => TransportError::Other(other.to_string()),
@@ -370,7 +411,10 @@ mod tests {
             let t = BitTiming::solve(&CANDLELIGHT, bitrate).unwrap();
             let nbt = 1 + t.prop_seg + t.phase_seg1 + t.phase_seg2;
             let sp = (1 + t.prop_seg + t.phase_seg1) * 1000 / nbt;
-            assert!(sp.abs_diff(want) <= 40, "{bitrate}: sample point {sp}, wanted ~{want}");
+            assert!(
+                sp.abs_diff(want) <= 40,
+                "{bitrate}: sample point {sp}, wanted ~{want}"
+            );
         }
     }
 

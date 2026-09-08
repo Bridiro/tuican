@@ -57,7 +57,12 @@ impl Slcan {
         }
         let _ = port.clear(serialport::ClearBuffer::Input);
 
-        Ok(Self { port, name: path.to_string(), bitrate, pending: Vec::new() })
+        Ok(Self {
+            port,
+            name: path.to_string(),
+            bitrate,
+            pending: Vec::new(),
+        })
     }
 
     /// Pull one complete `\r`-terminated line out of the buffer.
@@ -71,7 +76,9 @@ impl Slcan {
 impl Transport for Slcan {
     fn send(&mut self, frame: &Frame) -> Result<(), TransportError> {
         if frame.data.len() > 8 {
-            return Err(TransportError::Other("slcan carries at most 8 bytes".into()));
+            return Err(TransportError::Other(
+                "slcan carries at most 8 bytes".into(),
+            ));
         }
         let mut cmd = String::with_capacity(24);
         if canid::is_extended(frame.id) {
@@ -93,7 +100,9 @@ impl Transport for Slcan {
         if let Some(line) = self.take_line() {
             return Ok(parse_line(&line));
         }
-        self.port.set_timeout(timeout.max(Duration::from_millis(1))).ok();
+        self.port
+            .set_timeout(timeout.max(Duration::from_millis(1)))
+            .ok();
         let mut buf = [0u8; 256];
         match self.port.read(&mut buf) {
             Ok(0) => Ok(None),
@@ -120,7 +129,7 @@ impl Drop for Slcan {
     }
 }
 
-/// `t1238AABBCC…` — kind, id, dlc, then the payload as hex.
+/// `t1238AABBCC`: kind, id, dlc, then the payload as hex.
 fn parse_line(line: &[u8]) -> Option<Frame> {
     let text = std::str::from_utf8(line).ok()?;
     let (kind, rest) = text.split_at_checked(1)?;

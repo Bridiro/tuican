@@ -3,7 +3,10 @@
 use ratatui::style::{Color, Modifier, Style};
 
 pub fn header() -> Style {
-    Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)
+    Style::default()
+        .fg(Color::Black)
+        .bg(Color::Cyan)
+        .add_modifier(Modifier::BOLD)
 }
 
 pub fn hints() -> Style {
@@ -12,7 +15,9 @@ pub fn hints() -> Style {
 
 pub fn title(active: bool) -> Style {
     if active {
-        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::DarkGray)
     }
@@ -28,7 +33,9 @@ pub fn selected(focused: bool) -> Style {
     if focused {
         Style::default().add_modifier(Modifier::REVERSED)
     } else {
-        Style::default().add_modifier(Modifier::BOLD).fg(Color::Cyan)
+        Style::default()
+            .add_modifier(Modifier::BOLD)
+            .fg(Color::Cyan)
     }
 }
 

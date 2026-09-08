@@ -1,0 +1,97 @@
+VERSION "tuican demo"
+
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: Bench Motor Battery Brakes
+
+
+BO_ 256 MotorCommand: 8 Bench
+ SG_ enable : 0|1@1+ (1,0) [0|1] "" Motor
+ SG_ resetFault : 1|1@1+ (1,0) [0|1] "" Motor
+ SG_ torqueRequest : 16|16@1- (0.1,0) [-500|500] "Nm" Motor
+ SG_ speedLimit : 32|16@1+ (1,0) [0|20000] "rpm" Motor
+
+BO_ 257 MotorStatus: 8 Motor
+ SG_ state : 0|3@1+ (1,0) [0|7] "" Bench
+ SG_ ready : 3|1@1+ (1,0) [0|1] "" Bench
+ SG_ torqueActual : 16|16@1- (0.1,0) [-500|500] "Nm" Bench
+ SG_ speed : 32|16@1- (1,0) [-20000|20000] "rpm" Bench
+ SG_ temperature : 48|8@1- (1,-40) [-40|215] "degC" Bench
+
+BO_ 512 BatteryStatus: 8 Battery
+ SG_ voltage : 0|16@1+ (0.01,0) [0|650] "V" Bench
+ SG_ current : 16|16@1- (0.1,0) [-1000|1000] "A" Bench
+ SG_ stateOfCharge : 32|8@1+ (0.5,0) [0|100] "%" Bench
+ SG_ cellTempMax : 40|8@1- (1,-40) [-40|215] "degC" Bench
+
+BO_ 513 CellVoltages: 8 Battery
+ SG_ group M : 0|4@1+ (1,0) [0|1] "" Bench
+ SG_ cell1 m0 : 8|12@1+ (0.001,0) [0|5] "V" Bench
+ SG_ cell2 m0 : 20|12@1+ (0.001,0) [0|5] "V" Bench
+ SG_ cell3 m0 : 32|12@1+ (0.001,0) [0|5] "V" Bench
+ SG_ cell4 m1 : 8|12@1+ (0.001,0) [0|5] "V" Bench
+ SG_ cell5 m1 : 20|12@1+ (0.001,0) [0|5] "V" Bench
+ SG_ cell6 m1 : 32|12@1+ (0.001,0) [0|5] "V" Bench
+
+BO_ 769 WheelSpeeds: 8 Brakes
+ SG_ frontLeft : 0|16@1+ (0.25,0) [0|3000] "rpm" Bench
+ SG_ frontRight : 16|16@1+ (0.25,0) [0|3000] "rpm" Bench
+ SG_ rearLeft : 32|16@1+ (0.25,0) [0|3000] "rpm" Bench
+ SG_ rearRight : 48|16@1+ (0.25,0) [0|3000] "rpm" Bench
+
+BO_ 768 BrakePressure: 4 Brakes
+ SG_ front : 0|16@1+ (0.1,0) [0|250] "bar" Bench
+ SG_ rear : 16|16@1+ (0.1,0) [0|250] "bar" Bench
+
+BO_ 1024 Heartbeat: 2 Bench
+ SG_ counter : 0|8@1+ (1,0) [0|255] "" Motor
+ SG_ alive : 8|1@1+ (1,0) [0|1] "" Motor
+
+CM_ BO_ 256 "What the bench sends to the motor controller";
+CM_ BO_ 257 "What the motor controller reports back";
+CM_ BO_ 513 "Multiplexed: `group` selects which three cells are carried";
+
+VAL_ 257 state 0 "Idle" 1 "Precharge" 2 "Running" 3 "Fault" ;
+VAL_ 257 ready 0 "NotReady" 1 "Ready" ;
+VAL_ 256 enable 0 "Disabled" 1 "Enabled" ;
+
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 10000;
+BA_DEF_DEF_  "GenMsgCycleTime" 100;
+BA_ "GenMsgCycleTime" BO_ 256 10;
+BA_ "GenMsgCycleTime" BO_ 257 10;
+BA_ "GenMsgCycleTime" BO_ 512 100;
+BA_ "GenMsgCycleTime" BO_ 513 50;
+BA_ "GenMsgCycleTime" BO_ 768 20;
+BA_ "GenMsgCycleTime" BO_ 769 20;
+BA_ "GenMsgCycleTime" BO_ 1024 500;

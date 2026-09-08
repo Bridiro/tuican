@@ -1,26 +1,60 @@
-# tuican
+<p align="center">
+  <img src="assets/logo.png" width="112" alt="">
+</p>
+<h1 align="center">tuican</h1>
+<p align="center">A terminal CAN bench: pick an adapter, load a DBC, send and watch traffic.</p>
 
-A terminal CAN bench: pick an adapter, load a DBC, send and watch traffic.
+![tuican showing the message list, signal editor and live receive table](assets/screenshot.svg)
+
+## Install
 
 ```
-cargo run --release
+cargo install tuican
+```
+
+Or from a clone:
+
+```
+git clone https://github.com/Bridiro/tuican
+cd tuican
+cargo install --path .
+```
+
+Building needs a C compiler, because libusb is compiled from source by default.
+On Linux it also needs `libudev` headers (`libudev-dev` on Debian and Ubuntu,
+`systemd-devel` on Fedora). If you already have libusb-1.0 installed, or you do
+not need serial adapters, you can skip either:
+
+```
+cargo install tuican --no-default-features --features udev             # system libusb
+cargo install tuican --no-default-features --features vendored-libusb  # no libudev
+```
+
+## Try it without hardware
+
+The repository ships a small demo database and a set of rules:
+
+```
+tuican --dbc examples/demo.dbc --rules examples/demo.rules.toml --interface virtual
+```
+
+The virtual interface is a loopback, so anything you send comes back as receive
+traffic. Select `MotorStatus`, set `ready` to 1, press `s`, and watch
+`MotorCommand` start going out on its own because a rule fired.
+
+## Running
+
+```
+tuican
 ```
 
 No arguments needed. tuican finds the DBC files below the working directory and
-the adapters plugged in, and asks which you want. The second launch remembers
-both.
+the adapters plugged in, and asks which you want. The next launch remembers
+both, and `tuican --last` skips straight past the pickers.
 
-```
-┌ ● candleLight @ 1 Mbit/s │ primary.dbc · 165 msgs │ tx 12 rx 4183 │ ids 22 ─┐
-│ messages ──────────────────── signals  BrakesEBS (8 B) ────────────────────│
-│  0x005 BrakesEBS             pressureTank1            4.2 bar               │
-│ ~0x332 ControlMapsSet        pressureTank2            4.1 bar               │
-│  0x4DB CoolingCircuitTemp…   pressureLine1            0 bar                 │
-│ receive  22 ids ───────────────────────────────────────────────────────────│
-│        id name              count      ms  data            decoded         │
-│     0x4DB CoolingCircuit…    1042    10.1  8C 0A 91 0A     inlet=27 degC …  │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+The screen is a message list and a signal editor on top, a live receive table
+below, and two optional panels for periodic sends and rules. Everything adapts
+to the terminal size, including stacking the panes when the window is narrow.
 
 ## Keys
 
@@ -33,13 +67,13 @@ both.
 | `ctrl-d` / `ctrl-u` | half page down / up |
 | `ctrl-f` / `ctrl-b` | page down / up |
 | `H` / `M` / `L` | top, middle, bottom of the screen |
-| `/` | filter messages by name or hex id (starts empty each time) |
+| `/` | filter messages by name or hex id |
 | `enter` | edit the selected signal, or act on the panel row |
 | `s` | send the selected message once |
 | `p` | start or stop sending it periodically |
 | `d` | stop the periodic send under the cursor |
 | `x` | stop every periodic send |
-| `r` | raw send, e.g. `4E5 11 22 33` |
+| `r` | raw send, for example `4E5 11 22 33` |
 | `c` | clear the receive table |
 | `F2` | mouse capture on/off (off restores terminal text selection) |
 | `F3` | load a different DBC, without dropping the link |
@@ -50,39 +84,41 @@ both.
 | `?` | key help |
 | `q` | quit |
 
-`/` clears the previous filter, so re-filtering is typing a new search rather
-than cancelling and retyping. `esc` puts the old one back.
+`/` starts from an empty filter each time, so re-filtering is typing a new
+search rather than cancelling and retyping. `esc` puts the old one back.
 
-The mouse is optional and additive: click selects, the wheel scrolls the pane
+The mouse is optional and additive. Click selects, the wheel scrolls the pane
 under the pointer without moving keyboard focus. Nothing is mouse-only, and no
 click ever sends a frame.
 
 ## Rules
 
 A rule watches signals and, when its condition becomes true, changes what you
-are sending. It is there so that simulating a board is not a sequence of manual
+are sending. It exists so that simulating a board is not a sequence of manual
 keystrokes.
 
 ```toml
 [[rule]]
 name = "enable on ready"
 all = [
-  { message = "InverterTelemetry", signal = "inverterReady", op = "eq", value = 1 },
+  { message = "MotorStatus", signal = "ready", op = "eq", value = 1 },
 ]
 then = [
-  { action = "set", message = "InverterSetpoints", signal = "enableInverter", value = 1 },
-  { action = "cyclic", message = "InverterSetpoints", period_ms = 10 },
+  { action = "set", message = "MotorCommand", signal = "enable", value = 1 },
+  { action = "cyclic", message = "MotorCommand", period_ms = 10 },
 ]
 ```
 
-Rules fire on the rising edge, so that one fires once when the inverter reports
+![the cyclic and rules panels, with three rules having fired from one frame](assets/rules.svg)
+
+Rules fire on the rising edge, so that one fires once when the motor reports
 ready, not on every frame while it stays ready.
 
 Rules are independent, so any number of them can react to the same frame. A rule
-can also watch a signal you are *sending* (`source = "tx"`), which is how one
-rule's action satisfies another rule's condition within the same tick. Running
-the two together gives a graph of reactions rather than a chain, and a cycle in
-that graph is detected and reported instead of spinning.
+can also watch a signal you are sending (`source = "tx"`), letting one rule's
+action satisfy another rule's condition within the same tick. Together those
+give a graph of reactions rather than a chain, and a cycle in that graph is
+detected and reported instead of spinning.
 
 Operators are `eq`, `ne`, `lt`, `le`, `gt`, `ge` and `changed`. Actions are
 `set`, `send`, `cyclic` and `stop`. Every message and signal name is checked
@@ -91,30 +127,27 @@ is flagged in the rules panel rather than silently never matching.
 
 Put the file next to your DBC as `tuican.rules.toml` and tuican finds it, or
 pass `--rules FILE`. `F6` shows the panel, `enter` toggles a rule, `F7` reloads
-the file without restarting. A full commented template is in
-[examples/tuican.rules.toml](examples/tuican.rules.toml).
-
-## Reconnecting
-
-If the board is reset while connected, the link drops. tuican notices, reopens
-it by itself, and puts the periodic sends back, so a reset costs you nothing.
-The header shows `◐ link lost, reconnecting` while it retries. A gs_usb adapter
-that comes back at a different USB address is found again by its vendor and
-product ids.
+the file without restarting. A commented template is in
+[examples/demo.rules.toml](examples/demo.rules.toml).
 
 ## Adapters
 
-One is live at a time; `F4` switches without restarting.
+One is live at a time, and `F4` switches without restarting.
 
 | | |
 |---|---|
-| **gs_usb / candleLight** | over libusb. The path that works on macOS. Pick a bitrate in the picker — tuican asks the device for its clock and solves the bit timing. |
+| **gs_usb / candleLight** | Over libusb, so it works on macOS where there is no kernel driver. Pick a bitrate in the picker and tuican asks the device for its clock and solves the bit timing. |
 | **SocketCAN** | Linux only. Bring the link up first: `sudo ip link set can0 up type can bitrate 500000`. |
 | **slcan** | Lawicel ASCII adapters over a serial port. |
 | **virtual** | Loopback. Always offered, so the tool is usable with nothing plugged in. |
 
 On Linux, `tuican --print-udev-rule` prints the rule that fixes the usual
 permission error on USB adapters.
+
+If the board is reset while connected, the link drops. tuican notices, reopens
+it, and puts the periodic sends back, so a reset costs you nothing. The header
+shows `link lost, reconnecting` while it retries. A gs_usb adapter that comes
+back at a different USB address is found again by its vendor and product ids.
 
 ## Flags
 
@@ -130,11 +163,26 @@ tuican --last                    # reconnect to the previous session, no pickers
 
 ## Notes
 
-- Logs go to a file, never the screen: `RUST_LOG=debug tuican`, then read
+- Logs go to a file, never the screen. Run `RUST_LOG=debug tuican`, then read
   `tuican.log` under your platform's state directory.
 - Config (last interface, bitrate, DBC, rules file, mouse setting) lives in
   `tuican/config.toml` under your platform's config directory.
 - Classic CAN only for now. The payload type and the codec are already 64-byte
-  clean, so CAN FD is a transport-level change; see DESIGN.md.
+  clean, so CAN FD is a transport-level change.
 
-Architecture and the reasoning behind it: [DESIGN.md](DESIGN.md).
+## Status
+
+The gs_usb path is what I use daily, on macOS with a candleLight adapter.
+SocketCAN and slcan are written to their specifications and compile, but I have
+not yet exercised them against hardware. Reports welcome.
+
+## AI assistance
+
+Most of this code was written by Claude (Anthropic's Claude Code), working from
+my design decisions and feedback across several sessions. I directed the work,
+reviewed the changes, and did the hardware testing. It is stated here so you can
+weigh the code on that basis rather than find out later.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).

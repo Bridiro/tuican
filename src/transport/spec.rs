@@ -13,10 +13,21 @@ pub const COMMON_BITRATES: &[u32] = &[1_000_000, 500_000, 250_000, 125_000];
 pub enum TransportSpec {
     /// candleLight and friends. `bus`/`address` locate the device; `vid`/`pid`
     /// are kept only so the label survives a replug onto a different address.
-    GsUsb { bus: u8, address: u8, vid: u16, pid: u16, bitrate: u32 },
+    GsUsb {
+        bus: u8,
+        address: u8,
+        vid: u16,
+        pid: u16,
+        bitrate: u32,
+    },
     #[cfg(target_os = "linux")]
-    SocketCan { iface: String },
-    Slcan { port: String, bitrate: u32 },
+    SocketCan {
+        iface: String,
+    },
+    Slcan {
+        port: String,
+        bitrate: u32,
+    },
     Virtual,
     /// Drops the link once, to exercise reconnect. Test builds only.
     #[cfg(test)]
@@ -54,9 +65,14 @@ impl TransportSpec {
     /// Identity ignoring the bitrate, for "is this the one I used last time?".
     pub fn same_device(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::GsUsb { bus: a, address: b, .. }, Self::GsUsb { bus: c, address: d, .. }) => {
-                a == c && b == d
-            }
+            (
+                Self::GsUsb {
+                    bus: a, address: b, ..
+                },
+                Self::GsUsb {
+                    bus: c, address: d, ..
+                },
+            ) => a == c && b == d,
             #[cfg(target_os = "linux")]
             (Self::SocketCan { iface: a }, Self::SocketCan { iface: b }) => a == b,
             (Self::Slcan { port: a, .. }, Self::Slcan { port: b, .. }) => a == b,
@@ -71,9 +87,15 @@ impl TransportSpec {
 /// Build the one live transport. The caller drops the previous one first.
 pub fn open(spec: &TransportSpec) -> Result<Box<dyn Transport>, TransportError> {
     Ok(match spec {
-        TransportSpec::GsUsb { bus, address, vid, pid, bitrate } => {
-            Box::new(super::gs_usb::GsUsb::open(*bus, *address, *vid, *pid, *bitrate)?)
-        }
+        TransportSpec::GsUsb {
+            bus,
+            address,
+            vid,
+            pid,
+            bitrate,
+        } => Box::new(super::gs_usb::GsUsb::open(
+            *bus, *address, *vid, *pid, *bitrate,
+        )?),
         #[cfg(target_os = "linux")]
         TransportSpec::SocketCan { iface } => Box::new(super::socketcan::SocketCan::open(iface)?),
         TransportSpec::Slcan { port, bitrate } => {

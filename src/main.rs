@@ -1,8 +1,8 @@
-//! tuican — a terminal CAN bench.
+//! tuican: a terminal CAN bench.
 //!
-//! Three actors, no shared mutable state: this thread owns the UI and every
-//! piece of state, one background thread owns the adapter, and they exchange
-//! `Command` and `Event` values over channels. See DESIGN.md.
+//! This thread owns the UI and all application state. One background thread
+//! owns the adapter. They exchange `Command` and `Event` values over channels,
+//! so nothing is shared and nothing is locked.
 
 mod app;
 mod bus;
@@ -32,7 +32,7 @@ use app::App;
 use config::Config;
 use transport::TransportSpec;
 
-/// `1 Mbit/s`, `500 kbit/s` — used in the header and every picker row.
+/// `1 Mbit/s`, `500 kbit/s`. Used in the header and every picker row.
 pub fn fmt_bitrate(bps: u32) -> String {
     if bps.is_multiple_of(1_000_000) {
         format!("{} Mbit/s", bps / 1_000_000)
@@ -98,8 +98,8 @@ fn plan_startup(app: &mut App, args: &cli::Cli) -> Startup {
         app.load_dbc(&path);
     }
 
-    // 2. Rules, once the DBC is in place: loading them second is what lets the
-    //    loader check every message and signal name against it.
+    // 2. Rules, after the DBC, so the loader can check message and signal
+    //    names against it.
     let rules = args
         .rules
         .clone()
@@ -125,7 +125,10 @@ fn plan_startup(app: &mut App, args: &cli::Cli) -> Startup {
         None => true,
     };
 
-    Startup { need_dbc: app.db.is_empty(), need_interface }
+    Startup {
+        need_dbc: app.db.is_empty(),
+        need_interface,
+    }
 }
 
 fn spec_from_args(args: &cli::Cli) -> Option<TransportSpec> {

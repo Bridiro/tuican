@@ -2,6 +2,24 @@
 name = "tuican"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "Cross-platform tool to send, read and parse CAN messages"
+repository = "https://github.com/Bridiro/tuican"
+license = "Apache-2.0"
+readme = "README.md"
+keywords = ["can", "canbus", "dbc", "tui", "socketcan"]
+categories = ["command-line-utilities", "embedded", "hardware-support"]
+exclude = ["/dbc"]
+authors = ["Alessandro Bridi <ale.bridi15@gmail.com>"]
+
+[features]
+default = ["vendored-libusb", "udev"]
+# Build libusb from source rather than linking the system copy. Needs a C
+# compiler; turn it off if libusb-1.0 is already installed.
+vendored-libusb = ["rusb/vendored"]
+# Fuller serial port enumeration on Linux, so slcan adapters show their vendor
+# and product. Needs libudev at build time.
+udev = ["serialport/libudev"]
 
 [dependencies]
 anyhow = "1.0.104"
@@ -12,9 +30,9 @@ crossterm = "0.29.0"
 directories = "6.0.0"
 embedded-can = "0.4.1"
 ratatui = "0.30.2"
-rusb = { version = "0.9.4", features = ["vendored"] }
+rusb = "0.9.4"
 serde = { version = "1.0.229", features = ["derive"] }
-serialport = "4.10.0"
+serialport = { version = "4.10.0", default-features = false }
 thiserror = "2.0.20"
 toml = "1.1.5"
 tracing = "0.1.44"

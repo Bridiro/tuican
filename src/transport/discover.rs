@@ -1,5 +1,4 @@
-//! What is plugged in right now. This is the module that replaces the Python
-//! script's `--interface`/`--channel`/`--vid`/`--pid` flags with a list.
+//! What is plugged in right now, as a list the interface picker can show.
 
 use super::gs_usb;
 use super::spec::TransportSpec;
@@ -23,7 +22,7 @@ pub fn scan(default_bitrate: u32) -> Vec<Candidate> {
     out.push(Candidate {
         spec: TransportSpec::Virtual,
         label: "virtual".into(),
-        detail: "loopback — no hardware needed".into(),
+        detail: "loopback, no hardware needed".into(),
     });
     out
 }
@@ -37,7 +36,9 @@ fn gs_usb_devices(bitrate: u32) -> Vec<Candidate> {
         .filter_map(|d| {
             let desc = d.device_descriptor().ok()?;
             let (vid, pid) = (desc.vendor_id(), desc.product_id());
-            gs_usb::KNOWN.iter().find(|(v, p, _)| *v == vid && *p == pid)?;
+            gs_usb::KNOWN
+                .iter()
+                .find(|(v, p, _)| *v == vid && *p == pid)?;
             Some(Candidate {
                 spec: TransportSpec::GsUsb {
                     bus: d.bus_number(),
@@ -66,7 +67,8 @@ fn serial_ports(bitrate: u32) -> Vec<Candidate> {
         .filter(|p| {
             // Skip the Bluetooth and console pseudo-ports macOS always lists.
             let n = p.port_name.to_lowercase();
-            !n.contains("bluetooth") && !n.contains("debug-console")
+            !n.contains("bluetooth")
+                && !n.contains("debug-console")
                 && matches!(p.port_type, serialport::SerialPortType::UsbPort(_))
         })
         .map(|p| {
@@ -78,7 +80,10 @@ fn serial_ports(bitrate: u32) -> Vec<Candidate> {
                 _ => "serial".into(),
             };
             Candidate {
-                spec: TransportSpec::Slcan { port: p.port_name.clone(), bitrate },
+                spec: TransportSpec::Slcan {
+                    port: p.port_name.clone(),
+                    bitrate,
+                },
                 label: format!("slcan {}", p.port_name),
                 detail,
             }
@@ -101,10 +106,12 @@ fn socketcan_ifaces() -> Vec<Candidate> {
             let state = super::socketcan::state_of(&name);
             let detail = match super::socketcan::bitrate_of(&name) {
                 Some(b) => format!("{state}, {}", crate::fmt_bitrate(b)),
-                None => format!("{state} — bring it up with `ip link`"),
+                None => format!("{state}, bring it up with `ip link`"),
             };
             Some(Candidate {
-                spec: TransportSpec::SocketCan { iface: name.clone() },
+                spec: TransportSpec::SocketCan {
+                    iface: name.clone(),
+                },
                 label: format!("socketcan {name}"),
                 detail,
             })

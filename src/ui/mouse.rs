@@ -22,7 +22,7 @@ pub fn map(event: MouseEvent, layout: &LayoutMap, mode: &Mode) -> Action {
             None => Action::None,
         },
         // Scrolls the pane under the cursor, not the focused one, and leaves
-        // focus alone — so the wheel never displaces keyboard navigation.
+        // focus alone, so the wheel never displaces keyboard navigation.
         MouseEventKind::ScrollDown => Action::ScrollIn(pane_at(at, layout), 3),
         MouseEventKind::ScrollUp => Action::ScrollIn(pane_at(at, layout), -3),
         _ => Action::None,
@@ -30,7 +30,9 @@ pub fn map(event: MouseEvent, layout: &LayoutMap, mode: &Mode) -> Action {
 }
 
 fn pane_at(at: Position, layout: &LayoutMap) -> Option<Pane> {
-    Pane::ALL.into_iter().find(|p| layout.rect_of(*p).contains(at))
+    Pane::ALL
+        .into_iter()
+        .find(|p| layout.rect_of(*p).contains(at))
 }
 
 /// Which pane, and which visible row within it, the pointer is over.
@@ -62,8 +64,14 @@ mod tests {
     #[test]
     fn a_click_lands_on_the_row_under_the_pointer() {
         // Row 1 of the messages pane is the first item (row 0 is its title).
-        assert_eq!(hit(Position::new(4, 2), &layout()), Some((Pane::Messages, 0)));
-        assert_eq!(hit(Position::new(4, 5), &layout()), Some((Pane::Messages, 3)));
+        assert_eq!(
+            hit(Position::new(4, 2), &layout()),
+            Some((Pane::Messages, 0))
+        );
+        assert_eq!(
+            hit(Position::new(4, 5), &layout()),
+            Some((Pane::Messages, 3))
+        );
         // The receive pane has a column header, so its items start a row later.
         assert_eq!(hit(Position::new(4, 13), &layout()), Some((Pane::Rx, 0)));
     }

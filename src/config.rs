@@ -18,20 +18,29 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { interface: None, bitrate: 500_000, dbc: None, rules: None, mouse: true }
+        Self {
+            interface: None,
+            bitrate: 500_000,
+            dbc: None,
+            rules: None,
+            mouse: true,
+        }
     }
 }
 
 impl Config {
     pub fn path() -> Option<PathBuf> {
-        directories::ProjectDirs::from("", "", "tuican")
-            .map(|d| d.config_dir().join("config.toml"))
+        directories::ProjectDirs::from("", "", "tuican").map(|d| d.config_dir().join("config.toml"))
     }
 
     /// A corrupt or old config must never stop the tool starting; fall back.
     pub fn load() -> Self {
-        let Some(path) = Self::path() else { return Self::default() };
-        let Ok(text) = std::fs::read_to_string(&path) else { return Self::default() };
+        let Some(path) = Self::path() else {
+            return Self::default();
+        };
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            return Self::default();
+        };
         toml::from_str(&text).unwrap_or_else(|e| {
             tracing::warn!(error = %e, ?path, "ignoring unreadable config");
             Self::default()
@@ -55,6 +64,9 @@ impl Config {
 
     /// Only remember a DBC we can actually still find next time.
     pub fn remember_dbc(&mut self, path: &Path) {
-        self.dbc = path.canonicalize().ok().or_else(|| Some(path.to_path_buf()));
+        self.dbc = path
+            .canonicalize()
+            .ok()
+            .or_else(|| Some(path.to_path_buf()));
     }
 }

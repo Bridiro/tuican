@@ -1,8 +1,8 @@
 //! Reading rules from a TOML file, and checking them against the loaded DBC.
 //!
-//! A rule that names a signal the DBC does not define would simply never fire.
-//! That is a miserable thing to debug, so every name is checked at load time
-//! and anything unknown is reported.
+//! A rule naming a signal the DBC does not define would never fire and never
+//! explain itself, so every name is checked at load time and anything unknown
+//! is reported.
 
 use std::path::{Path, PathBuf};
 
@@ -52,17 +52,27 @@ struct CondSpec {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case")]
 enum ActSpec {
-    Set { message: String, signal: String, value: f64 },
-    Send { message: String },
-    Cyclic { message: String, period_ms: f64 },
-    Stop { message: String },
+    Set {
+        message: String,
+        signal: String,
+        value: f64,
+    },
+    Send {
+        message: String,
+    },
+    Cyclic {
+        message: String,
+        period_ms: f64,
+    },
+    Stop {
+        message: String,
+    },
 }
 
 pub fn load(path: &Path, db: &Database) -> anyhow::Result<RuleSet> {
-    let text = std::fs::read_to_string(path)
-        .with_context(|| format!("cannot read {}", path.display()))?;
-    let file: File = toml::from_str(&text)
-        .map_err(|e| anyhow!("{}: {e}", path.display()))?;
+    let text =
+        std::fs::read_to_string(path).with_context(|| format!("cannot read {}", path.display()))?;
+    let file: File = toml::from_str(&text).map_err(|e| anyhow!("{}: {e}", path.display()))?;
 
     let mut warnings = Vec::new();
     let mut rules = Vec::new();
@@ -87,16 +97,32 @@ pub fn load(path: &Path, db: &Database) -> anyhow::Result<RuleSet> {
                 seen: None,
             }
         };
-        let all = spec.all.into_iter().map(|c| convert(c, &mut mine)).collect();
-        let any = spec.any.into_iter().map(|c| convert(c, &mut mine)).collect();
+        let all = spec
+            .all
+            .into_iter()
+            .map(|c| convert(c, &mut mine))
+            .collect();
+        let any = spec
+            .any
+            .into_iter()
+            .map(|c| convert(c, &mut mine))
+            .collect();
 
         let then = spec
             .then
             .into_iter()
             .map(|a| match a {
-                ActSpec::Set { message, signal, value } => {
+                ActSpec::Set {
+                    message,
+                    signal,
+                    value,
+                } => {
                     check(db, &message, Some(&signal), &mut mine);
-                    Act::Set { message, signal, value }
+                    Act::Set {
+                        message,
+                        signal,
+                        value,
+                    }
                 }
                 ActSpec::Send { message } => {
                     check(db, &message, None, &mut mine);
@@ -127,7 +153,12 @@ pub fn load(path: &Path, db: &Database) -> anyhow::Result<RuleSet> {
         });
     }
 
-    Ok(RuleSet { path: Some(path.to_path_buf()), rules, warnings, looped: false })
+    Ok(RuleSet {
+        path: Some(path.to_path_buf()),
+        rules,
+        warnings,
+        looped: false,
+    })
 }
 
 /// Names checked against the DBC, but only when one is loaded: rules may be

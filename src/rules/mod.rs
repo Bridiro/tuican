@@ -3,10 +3,9 @@
 //!
 //! A rule watches signals and, when its condition becomes true, performs
 //! actions. Rules are independent, so any number of them can react to the same
-//! frame (parallel), and because a rule can also watch a signal *we* are
-//! sending, one rule's action can satisfy another rule's condition (series).
-//! Running the two together is what makes a graph of reactions rather than a
-//! list, and [`MAX_PASSES`] is what stops a cycle in that graph spinning.
+//! frame. A rule can also watch a signal we are sending, letting one rule's
+//! action satisfy another rule's condition. Together those give a graph of
+//! reactions rather than a list, and [`MAX_PASSES`] bounds a cycle in it.
 
 pub mod load;
 
@@ -119,7 +118,11 @@ impl Condition {
 #[derive(Clone, Debug)]
 pub enum Act {
     /// Change a signal on a message we send.
-    Set { message: String, signal: String, value: f64 },
+    Set {
+        message: String,
+        signal: String,
+        value: f64,
+    },
     /// Send a message once.
     Send { message: String },
     /// Start (or re-arm) a periodic send.
@@ -131,7 +134,11 @@ pub enum Act {
 impl Act {
     pub fn describe(&self) -> String {
         match self {
-            Act::Set { message, signal, value } => {
+            Act::Set {
+                message,
+                signal,
+                value,
+            } => {
                 format!("set {message}.{signal} = {}", crate::app::trim(*value))
             }
             Act::Send { message } => format!("send {message}"),
@@ -271,7 +278,9 @@ mod tests {
             enabled: true,
             all,
             any: Vec::new(),
-            then: vec![Act::Send { message: "Out".into() }],
+            then: vec![Act::Send {
+                message: "Out".into(),
+            }],
             fired: 0,
             last_fired: None,
             warning: None,
@@ -292,8 +301,15 @@ mod tests {
         assert!(set.pass(&rx, &tx).is_empty());
 
         rx.set_for_test("In", "state", 2.0);
-        assert_eq!(set.pass(&rx, &tx).len(), 1, "should fire when it becomes true");
-        assert!(set.pass(&rx, &tx).is_empty(), "must not fire again while it stays true");
+        assert_eq!(
+            set.pass(&rx, &tx).len(),
+            1,
+            "should fire when it becomes true"
+        );
+        assert!(
+            set.pass(&rx, &tx).is_empty(),
+            "must not fire again while it stays true"
+        );
 
         // Falling and rising again arms it once more.
         rx.set_for_test("In", "state", 0.0);
@@ -313,7 +329,10 @@ mod tests {
         let mut rx = RxTable::default();
 
         rx.set_for_test("In", "counter", 5.0);
-        assert!(set.pass(&rx, &tx).is_empty(), "first sighting is not a change");
+        assert!(
+            set.pass(&rx, &tx).is_empty(),
+            "first sighting is not a change"
+        );
         rx.set_for_test("In", "counter", 6.0);
         assert_eq!(set.pass(&rx, &tx).len(), 1);
     }
@@ -372,7 +391,9 @@ mod tests {
         };
         let mut tx = TxValues::new();
         assert!(set.pass(&RxTable::default(), &tx).is_empty());
-        tx.entry("Out".into()).or_default().insert("enable".into(), 1.0);
+        tx.entry("Out".into())
+            .or_default()
+            .insert("enable".into(), 1.0);
         assert_eq!(set.pass(&RxTable::default(), &tx).len(), 1);
     }
 }

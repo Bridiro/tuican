@@ -1,5 +1,5 @@
 //! Where things go. Every frame is laid out from the *current* terminal size,
-//! so there is no resize handler anywhere in the program — a `Resize` event is
+//! so there is no resize handler anywhere in the program. A `Resize` event is
 //! just a redraw trigger.
 
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -75,12 +75,12 @@ pub fn split_band(band: Rect, cyclic: bool, rules: bool) -> (Rect, Rect) {
 /// and stack when there is not, rather than being squeezed into uselessness.
 pub fn split(area: Rect, band_height: u16) -> Frames {
     let rows = Layout::vertical([
-        Constraint::Length(1),          // header
-        Constraint::Percentage(45),     // messages | signals
-        Constraint::Min(4),             // receive — absorbs the slack
+        Constraint::Length(1),           // header
+        Constraint::Percentage(45),      // messages | signals
+        Constraint::Min(4),              // receive, absorbs the slack
         Constraint::Length(band_height), // one-line strip, or the panels
-        Constraint::Length(1),          // status / last error
-        Constraint::Length(1),          // key hints
+        Constraint::Length(1),           // status / last error
+        Constraint::Length(1),           // key hints
     ])
     .split(area);
 
@@ -136,9 +136,9 @@ pub fn scroll_to_show(scroll: usize, cursor: usize, height: usize, total: usize)
 /// (`TsacCellboard1Voltage`, `TsacCellboard2Temperature`), so cutting the tail
 /// loses the part that says what the signal *is*.
 ///
-/// This is readability, not identity: at a narrow width two names in the same
-/// family can still render alike. The id column beside them is what actually
-/// distinguishes rows, and it is never elided.
+/// This is readability, not identity. At a narrow width two names in the same
+/// family can still render alike; the id column beside them distinguishes the
+/// rows, and it is never elided.
 pub fn elide(text: &str, width: usize) -> String {
     let chars: Vec<char> = text.chars().collect();
     if chars.len() <= width {
@@ -150,15 +150,23 @@ pub fn elide(text: &str, width: usize) -> String {
     let keep = width - 1;
     let head = keep.div_ceil(2);
     let tail = keep - head;
-    chars[..head].iter().collect::<String>() + "…" + &chars[chars.len() - tail..].iter().collect::<String>()
+    chars[..head].iter().collect::<String>()
+        + "…"
+        + &chars[chars.len() - tail..].iter().collect::<String>()
 }
 
-/// Cut a composed row at the right edge. Rows are column-aligned, so trimming
-/// the tail preserves the layout; [`elide`] would cut through the columns.
-pub fn clip(text: &str, width: usize) -> String {
+/// Make a composed row exactly `width` columns: cut at the right edge, or pad.
+///
+/// Rows are column-aligned, so trimming the tail preserves the layout where
+/// [`elide`] would cut through the columns. Padding matters too: without it a
+/// highlighted row only covers its own text instead of the whole pane.
+pub fn fit(text: &str, width: usize) -> String {
     let chars: Vec<char> = text.chars().collect();
-    if chars.len() <= width {
+    if chars.len() == width {
         return text.to_string();
+    }
+    if chars.len() < width {
+        return text.to_string() + &" ".repeat(width - chars.len());
     }
     if width == 0 {
         return String::new();
@@ -171,10 +179,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn clipping_a_row_keeps_the_leading_columns_intact() {
-        assert_eq!(clip("0x123  Name  42", 20), "0x123  Name  42");
-        assert_eq!(clip("0x123  Name  42", 9), "0x123  N…");
-        assert_eq!(clip("abc", 0), "");
+    fn fitting_a_row_keeps_the_leading_columns_and_fills_the_width() {
+        // Padded, so a selected row highlights across the whole pane.
+        assert_eq!(fit("0x123  Name  42", 20), "0x123  Name  42     ");
+        assert_eq!(fit("0x123  Name  42", 9), "0x123  N…");
+        assert_eq!(fit("abc", 0), "");
+        for width in [0, 1, 8, 40] {
+            assert_eq!(fit("0x123  Name", width).chars().count(), width);
+        }
     }
 
     #[test]
@@ -190,8 +202,8 @@ mod tests {
         assert_eq!(elide("short", 10), "short");
         assert_eq!(elide("TsacCellboard1Voltage", 12), "TsacCe…ltage");
         assert!(elide("TsacCellboard1Voltage", 12).chars().count() <= 12);
-        // The suffix survives, which is what says whether a signal is a
-        // voltage or a temperature.
+        // The suffix survives, so a voltage still reads differently from a
+        // temperature.
         assert!(elide("TsacCellboard1Voltage", 14).ends_with("oltage"));
         assert!(elide("TsacCellboard1Temperature", 14).ends_with("rature"));
     }

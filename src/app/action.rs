@@ -1,7 +1,7 @@
 //! What the user *meant*, decoupled from which key or click produced it.
 //!
-//! Both `ui::input` and `ui::mouse` produce these, which is what keeps mouse
-//! support from growing its own parallel set of behaviours.
+//! Both `ui::input` and `ui::mouse` produce these, so mouse support cannot
+//! grow its own parallel set of behaviours.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Pane {
@@ -15,8 +15,13 @@ pub enum Pane {
 }
 
 impl Pane {
-    pub const ALL: [Pane; 5] =
-        [Pane::Messages, Pane::Signals, Pane::Rx, Pane::Cyclic, Pane::Rules];
+    pub const ALL: [Pane; 5] = [
+        Pane::Messages,
+        Pane::Signals,
+        Pane::Rx,
+        Pane::Cyclic,
+        Pane::Rules,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {

@@ -135,7 +135,11 @@ impl RxTable {
     /// Losing the rate history on a DBC swap would be a needless annoyance.
     pub fn redecode(&mut self, db: &Database) {
         for row in self.rows.values_mut() {
-            let frame = Frame { id: row.id, data: row.data, echo: false };
+            let frame = Frame {
+                id: row.id,
+                data: row.data,
+                echo: false,
+            };
             let (name, known, decoded, values) = describe(&frame, db);
             row.name = name;
             row.known = known;

@@ -33,11 +33,17 @@ impl Payload {
         let len = src.len().min(Self::MAX);
         let mut bytes = [0u8; Self::MAX];
         bytes[..len].copy_from_slice(&src[..len]);
-        Self { bytes, len: len as u8 }
+        Self {
+            bytes,
+            len: len as u8,
+        }
     }
 
     pub fn hex(&self) -> String {
-        self.iter().map(|b| format!("{b:02X}")).collect::<Vec<_>>().join(" ")
+        self.iter()
+            .map(|b| format!("{b:02X}"))
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 }
 
@@ -69,7 +75,7 @@ pub struct Frame {
 pub enum TransportError {
     #[error("device not found: {0}")]
     NotFound(String),
-    /// Carries the remedy, not just the errno — see `gs_usb::PERMISSION_HINT`.
+    /// Carries the remedy, not just the errno. See `gs_usb::PERMISSION_HINT`.
     #[error("{0}")]
     Permission(String),
     #[error("this adapter cannot do {0} bit/s")]
@@ -88,9 +94,9 @@ impl From<anyhow::Error> for TransportError {
 
 /// One adapter, driven exclusively by the bus thread.
 ///
-/// `Send` but deliberately not `Sync` or `Clone`: the bus thread owns the only
-/// handle, which is how "exactly one interface is live" is enforced by the type
-/// system rather than by a runtime check.
+/// `Send` but deliberately not `Sync` or `Clone`. The bus thread owns the only
+/// handle, so "exactly one interface is live" holds by construction rather than
+/// by a runtime check.
 pub trait Transport: Send {
     fn send(&mut self, frame: &Frame) -> Result<(), TransportError>;
 

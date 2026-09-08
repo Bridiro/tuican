@@ -1,9 +1,8 @@
 //! The one thread allowed to touch the adapter.
 //!
-//! It owns the transport, the clock, and the periodic-send table. It holds no
-//! reference to the DBC or to the UI, and the UI holds no reference to it —
-//! everything crosses as [`Command`] and [`Event`] values, so there is no lock
-//! anywhere in the program.
+//! It owns the transport, the clock, and the periodic-send table, and knows
+//! nothing about DBCs or the UI. Everything crosses as [`Command`] and
+//! [`Event`] values, so there is no lock anywhere in the program.
 
 pub mod command;
 pub mod cyclic;
@@ -21,8 +20,8 @@ use event::{Event, Stats};
 
 /// How long a single pass may spend draining the receive queue.
 ///
-/// Draining continuously is not an optimisation: it is what stops a gs_usb
-/// adapter backing up and stalling its own transmit path.
+/// Draining continuously is not an optimisation. It stops a gs_usb adapter
+/// backing up and stalling its own transmit path.
 const DRAIN_SLICE: Duration = Duration::from_millis(10);
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 const STATS_EVERY: Duration = Duration::from_millis(200);
@@ -118,9 +117,12 @@ impl Bus {
                 self.transmit(id, &data);
                 self.report_now();
             }
-            Command::SetCyclic { key, id, data, period } => {
-                self.cyclic.set(key, id, data, period)
-            }
+            Command::SetCyclic {
+                key,
+                id,
+                data,
+                period,
+            } => self.cyclic.set(key, id, data, period),
             Command::ClearCyclic(key) => self.cyclic.remove(&key),
             Command::ClearAllCyclic => self.cyclic.clear(),
             Command::Shutdown => self.running = false,
@@ -143,7 +145,11 @@ impl Bus {
                 let who = t.describe();
                 self.transport = Some(t);
                 tracing::info!(%who, "connected");
-                self.emit(Event::Connected { spec, who, resumed: false });
+                self.emit(Event::Connected {
+                    spec,
+                    who,
+                    resumed: false,
+                });
             }
             Err(e) => {
                 tracing::warn!(error = %e, "connect failed");
@@ -183,13 +189,19 @@ impl Bus {
                 // Stale deadlines would otherwise all come due at once.
                 self.cyclic.rearm(Instant::now());
                 tracing::info!(%who, attempts = self.retry_count, "link restored");
-                self.emit(Event::Connected { spec, who, resumed: true });
+                self.emit(Event::Connected {
+                    spec,
+                    who,
+                    resumed: true,
+                });
             }
             Err(e) => {
                 tracing::debug!(error = %e, attempt = self.retry_count, "retry failed");
                 self.retry_backoff = (self.retry_backoff * 2).min(MAX_RETRY);
                 self.retry_at = Some(Instant::now() + self.retry_backoff);
-                self.emit(Event::Reconnecting { attempt: self.retry_count });
+                self.emit(Event::Reconnecting {
+                    attempt: self.retry_count,
+                });
             }
         }
     }
@@ -199,13 +211,20 @@ impl Bus {
             self.emit(Event::BusError("not connected".into()));
             return;
         };
-        let frame = Frame { id, data: *data, echo: false };
+        let frame = Frame {
+            id,
+            data: *data,
+            echo: false,
+        };
         match t.send(&frame) {
             Ok(()) => self.stats.tx += 1,
             Err(e) => {
                 self.stats.tx_errors += 1;
                 let fatal = matches!(e, transport::TransportError::Disconnected);
-                self.emit(Event::BusError(format!("tx {}: {e}", crate::canid::display(id))));
+                self.emit(Event::BusError(format!(
+                    "tx {}: {e}",
+                    crate::canid::display(id)
+                )));
                 if fatal {
                     self.lost_link();
                 }
@@ -216,7 +235,9 @@ impl Bus {
     fn drain(&mut self) {
         let deadline = Instant::now() + DRAIN_SLICE;
         while Instant::now() < deadline {
-            let Some(t) = self.transport.as_mut() else { return };
+            let Some(t) = self.transport.as_mut() else {
+                return;
+            };
             match t.recv(Duration::from_millis(2)) {
                 Ok(Some(frame)) if frame.echo => self.stats.tx_echo += 1,
                 Ok(Some(frame)) => {
@@ -269,7 +290,9 @@ mod tests {
         let (evt_tx, evt_rx) = crossbeam_channel::unbounded();
         let handle = spawn(cmd_rx, evt_tx);
 
-        cmd_tx.send(Command::Connect(TransportSpec::Virtual)).unwrap();
+        cmd_tx
+            .send(Command::Connect(TransportSpec::Virtual))
+            .unwrap();
         cmd_tx
             .send(Command::SetCyclic {
                 key: "M".into(),
