@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="902" height="424" viewBox="0 0 901.6 424.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, &quot;DejaVu Sans Mono&quot;, monospace" font-size="14.0">
+<title>tuican: a received message opened in full with i</title>
+<rect width="901.6" height="424.0" rx="8" fill="#14161b"/>
+<rect x="14.0" y="14.0" width="873.6" height="18.0" fill="#56b6c2"/>
+<rect x="14.0" y="266.0" width="33.6" height="18.0" fill="#c8ccd4"/>
+<rect x="854.0" y="266.0" width="33.6" height="18.0" fill="#c8ccd4"/>
+<rect x="14.0" y="392.0" width="873.6" height="18.0" fill="#5c6370"/>
+<text x="22.4" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="39.2" y="28.0" fill="#1b1e24" font-weight="600" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">virtual</text>
+<text x="106.4" y="28.0" fill="#1b1e24" font-weight="600" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">loopback</text>
+<text x="182.0" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="198.8" y="28.0" fill="#1b1e24" font-weight="600" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">demo.dbc</text>
+<text x="274.4" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="291.2" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">7</text>
+<text x="308.0" y="28.0" fill="#1b1e24" font-weight="600" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">msgs</text>
+<text x="350.0" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="366.8" y="28.0" fill="#1b1e24" font-weight="600" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">tx</text>
+<text x="392.0" y="28.0" fill="#1b1e24" font-weight="600" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">107</text>
+<text x="425.6" y="28.0" fill="#1b1e24" font-weight="600" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">rx</text>
+<text x="450.8" y="28.0" fill="#1b1e24" font-weight="600" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">107</text>
+<text x="484.4" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="501.2" y="28.0" fill="#1b1e24" font-weight="600" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">ids</text>
+<text x="534.8" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">2</text>
+<text x="551.6" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="568.4" y="28.0" fill="#1b1e24" font-weight="600" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">cyclic</text>
+<text x="627.2" y="28.0" fill="#1b1e24" font-weight="600" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">1</text>
+<text x="22.4" y="46.0" fill="#5c6370" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">messages</text>
+<text x="98.0" y="46.0" fill="#5c6370" textLength="268.8" lengthAdjust="spacing" xml:space="preserve">────────────────────────────────</text>
+<text x="375.2" y="46.0" fill="#5c6370" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">signals</text>
+<text x="450.8" y="46.0" fill="#5c6370" textLength="92.4" lengthAdjust="spacing" xml:space="preserve">MotorStatus</text>
+<text x="551.6" y="46.0" fill="#5c6370" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">(8</text>
+<text x="576.8" y="46.0" fill="#5c6370" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">B)</text>
+<text x="602.0" y="46.0" fill="#5c6370" textLength="285.6" lengthAdjust="spacing" xml:space="preserve">──────────────────────────────────</text>
+<text x="22.4" y="64.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">0x200</text>
+<text x="72.8" y="64.0" fill="#c8ccd4" textLength="109.2" lengthAdjust="spacing" xml:space="preserve">BatteryStatus</text>
+<text x="366.8" y="64.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">state</text>
+<text x="576.8" y="64.0" fill="#c8ccd4" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">Running</text>
+<text x="644.0" y="64.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">(2)</text>
+<text x="22.4" y="82.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">0x300</text>
+<text x="72.8" y="82.0" fill="#c8ccd4" textLength="109.2" lengthAdjust="spacing" xml:space="preserve">BrakePressure</text>
+<text x="366.8" y="82.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">ready</text>
+<text x="576.8" y="82.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">Ready</text>
+<text x="627.2" y="82.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">(1)</text>
+<text x="22.4" y="100.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">0x2</text>
+<text x="47.6" y="100.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">┌</text>
+<text x="64.4" y="100.0" fill="#56b6c2" font-weight="600" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">received</text>
+<text x="140.0" y="100.0" fill="#56b6c2" font-weight="600" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">message</text>
+<text x="207.2" y="100.0" fill="#56b6c2" textLength="646.8" lengthAdjust="spacing" xml:space="preserve">────────────────────────────────────────────────────────────────────────────┐</text>
+<text x="22.4" y="118.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">0x4</text>
+<text x="47.6" y="118.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="118.0" fill="#56b6c2" font-weight="600" textLength="92.4" lengthAdjust="spacing" xml:space="preserve">MotorStatus</text>
+<text x="165.2" y="118.0" fill="#56b6c2" font-weight="600" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">0x101</text>
+<text x="845.6" y="118.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="14.0" y="136.0" fill="#e5c07b" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">~0x1</text>
+<text x="47.6" y="136.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="845.6" y="136.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="22.4" y="154.0" fill="#56b6c2" font-weight="600" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">0x1</text>
+<text x="47.6" y="154.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="154.0" fill="#5c6370" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">received</text>
+<text x="182.0" y="154.0" fill="#c8ccd4" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">1</text>
+<text x="198.8" y="154.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">frame</text>
+<text x="845.6" y="154.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="22.4" y="172.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">0x3</text>
+<text x="47.6" y="172.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="172.0" fill="#5c6370" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">last</text>
+<text x="106.4" y="172.0" fill="#5c6370" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">seen</text>
+<text x="182.0" y="172.0" fill="#c8ccd4" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">0.53</text>
+<text x="224.0" y="172.0" fill="#c8ccd4" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">s</text>
+<text x="240.8" y="172.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">ago</text>
+<text x="845.6" y="172.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="47.6" y="190.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="190.0" fill="#5c6370" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">data</text>
+<text x="182.0" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">0A</text>
+<text x="207.2" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">00</text>
+<text x="232.4" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">E6</text>
+<text x="257.6" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">04</text>
+<text x="282.8" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">68</text>
+<text x="308.0" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">10</text>
+<text x="333.2" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">58</text>
+<text x="358.4" y="190.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">00</text>
+<text x="383.6" y="190.0" fill="#c8ccd4" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="400.4" y="190.0" fill="#c8ccd4" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">8</text>
+<text x="417.2" y="190.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">bytes</text>
+<text x="845.6" y="190.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="47.6" y="208.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="845.6" y="208.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="22.4" y="226.0" fill="#56b6c2" font-weight="600" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">rec</text>
+<text x="47.6" y="226.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="226.0" fill="#5c6370" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">state</text>
+<text x="182.0" y="226.0" fill="#c8ccd4" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">Running</text>
+<text x="249.2" y="226.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">(2)</text>
+<text x="845.6" y="226.0" fill="#56b6c2" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">│────</text>
+<text x="47.6" y="244.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="244.0" fill="#5c6370" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">ready</text>
+<text x="182.0" y="244.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">Ready</text>
+<text x="232.4" y="244.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">(1)</text>
+<text x="845.6" y="244.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="47.6" y="262.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="262.0" fill="#5c6370" textLength="100.8" lengthAdjust="spacing" xml:space="preserve">torqueActual</text>
+<text x="182.0" y="262.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">125.4</text>
+<text x="232.4" y="262.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">Nm</text>
+<text x="845.6" y="262.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="862.4" y="262.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">re…</text>
+<text x="47.6" y="280.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="280.0" fill="#5c6370" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">speed</text>
+<text x="182.0" y="280.0" fill="#c8ccd4" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">4200</text>
+<text x="224.0" y="280.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">rpm</text>
+<text x="845.6" y="280.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="854.0" y="280.0" fill="#14161b" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">rea…</text>
+<text x="47.6" y="298.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="64.4" y="298.0" fill="#5c6370" textLength="92.4" lengthAdjust="spacing" xml:space="preserve">temperature</text>
+<text x="182.0" y="298.0" fill="#c8ccd4" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">48</text>
+<text x="207.2" y="298.0" fill="#c8ccd4" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">degC</text>
+<text x="845.6" y="298.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">│</text>
+<text x="47.6" y="316.0" fill="#56b6c2" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">└</text>
+<text x="64.4" y="316.0" fill="#5c6370" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">any</text>
+<text x="98.0" y="316.0" fill="#5c6370" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">key</text>
+<text x="131.6" y="316.0" fill="#5c6370" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">closes</text>
+<text x="190.4" y="316.0" fill="#56b6c2" textLength="663.6" lengthAdjust="spacing" xml:space="preserve">──────────────────────────────────────────────────────────────────────────────┘</text>
+<text x="22.4" y="370.0" fill="#5c6370" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">cyclic:</text>
+<text x="89.6" y="370.0" fill="#5c6370" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">MotorCommand(106)</text>
+<text x="22.4" y="388.0" fill="#5c6370" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">[receive]</text>
+<text x="106.4" y="388.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">raise</text>
+<text x="156.8" y="388.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">the</text>
+<text x="190.4" y="388.0" fill="#c8ccd4" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">speed</text>
+<text x="240.8" y="388.0" fill="#c8ccd4" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">limit:</text>
+<text x="299.6" y="388.0" fill="#c8ccd4" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">set</text>
+<text x="333.2" y="388.0" fill="#c8ccd4" textLength="193.2" lengthAdjust="spacing" xml:space="preserve">MotorCommand.speedLimit</text>
+<text x="534.8" y="388.0" fill="#c8ccd4" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">=</text>
+<text x="551.6" y="388.0" fill="#c8ccd4" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">6000</text>
+<text x="22.4" y="406.0" fill="#1b1e24" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">tab</text>
+<text x="56.0" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="72.8" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">/</text>
+<text x="89.6" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="106.4" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">⏎</text>
+<text x="123.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="140.0" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">s</text>
+<text x="156.8" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="173.6" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">p</text>
+<text x="190.4" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="207.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">x</text>
+<text x="224.0" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="240.8" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">r</text>
+<text x="257.6" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="274.4" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">c</text>
+<text x="291.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="308.0" y="406.0" fill="#1b1e24" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">F3</text>
+<text x="333.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="350.0" y="406.0" fill="#1b1e24" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">F4</text>
+<text x="375.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="392.0" y="406.0" fill="#1b1e24" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">F5</text>
+<text x="417.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="434.0" y="406.0" fill="#1b1e24" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">F6</text>
+<text x="459.2" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="476.0" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">?</text>
+<text x="492.8" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="509.6" y="406.0" fill="#1b1e24" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">q</text>
+<text x="534.8" y="406.0" fill="#1b1e24" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">[mouse:on]</text>
+</svg>

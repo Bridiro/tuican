@@ -6,6 +6,7 @@
 
 pub mod action;
 mod cursor;
+mod detail;
 mod messages;
 mod picker;
 mod prompt;
@@ -29,6 +30,7 @@ use crate::transport::Payload;
 use crate::transport::spec::TransportSpec;
 use crate::ui::layout::LayoutMap;
 use action::{Action, Pane, WindowSpot};
+pub use detail::{Detail, DetailRow};
 use rx_table::RxTable;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -78,6 +80,8 @@ pub enum Mode {
     Normal,
     Prompt(Prompt),
     Picker(Picker),
+    /// One row shown in full, for when a pane had to cut it short.
+    Detail(Detail),
     Help,
 }
 
@@ -268,6 +272,7 @@ impl App {
         match &self.mode {
             Mode::Prompt(_) => return self.update_prompt(action),
             Mode::Picker(_) => return self.update_picker(action),
+            Mode::Detail(_) => return self.update_detail(action),
             Mode::Help => {
                 if !matches!(action, Action::None) {
                     self.mode = Mode::Normal;
@@ -358,8 +363,13 @@ impl App {
                 };
                 self.prompt(PromptKind::Filter, "filter:".into(), String::new());
             }
+            Action::Inspect => self.inspect(),
             Action::BeginEditSignal => {
-                if self.pane == Pane::Rules {
+                // The receive table has nothing to edit, so enter shows the row
+                // in full instead, which is what you want there anyway.
+                if self.pane == Pane::Rx {
+                    self.inspect();
+                } else if self.pane == Pane::Rules {
                     self.toggle_selected_rule();
                 } else if self.pane == Pane::Cyclic {
                     // Enter on a periodic send jumps to the message it sends,

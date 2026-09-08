@@ -6,10 +6,10 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
 
 use crate::app::action::Pane;
-use crate::app::{App, Link, Picker, PickerKind, Prompt};
+use crate::app::{App, Detail, DetailRow, Link, Picker, PickerKind, Prompt};
 use crate::canid;
 use crate::dbc::mux;
-use crate::ui::layout::{elide, fit};
+use crate::ui::layout::{elide, fit, wrap};
 use crate::ui::theme;
 
 /// Draw a pane that has a column header: the title bar, the header, and the
@@ -504,6 +504,7 @@ const KEYS: &[(&str, &str)] = &[
     ("H / M / L", "top, middle, bottom of the screen"),
     ("/", "filter messages (starts empty each time)"),
     ("enter", "edit signal, or act on the panel row"),
+    ("i", "show the row under the cursor in full"),
     ("s", "send the selected message once"),
     ("p", "start or stop sending it periodically"),
     ("d", "stop the periodic send under the cursor"),
@@ -535,6 +536,89 @@ pub fn help_size() -> (u16, u16) {
         .max()
         .unwrap_or(0);
     ((key_column() + widest + 4) as u16, KEYS.len() as u16 + 2)
+}
+
+/// Lay the overlay out. Long values wrap with a hanging indent rather than
+/// being cut, which is the whole point of it.
+pub fn detail_lines(detail: &Detail, inner_width: usize) -> Vec<Line<'static>> {
+    let label_width = detail
+        .rows
+        .iter()
+        .filter_map(|r| match r {
+            DetailRow::Pair(label, _) => Some(label.chars().count()),
+            _ => None,
+        })
+        .max()
+        .unwrap_or(0)
+        .min(inner_width / 2)
+        .max(1);
+
+    let mut lines: Vec<Line> = Vec::new();
+    for row in &detail.rows {
+        match row {
+            DetailRow::Blank => lines.push(Line::from("")),
+            DetailRow::Heading(text) => {
+                for part in wrap(text, inner_width) {
+                    lines.push(Line::from(Span::styled(part, theme::title(true))));
+                }
+            }
+            DetailRow::Text(text) => {
+                // Keep whatever indent the builder chose.
+                let indent = text.len() - text.trim_start().len();
+                let pad = " ".repeat(indent);
+                for part in wrap(text, inner_width.saturating_sub(indent)) {
+                    lines.push(Line::from(format!("{pad}{part}")));
+                }
+            }
+            DetailRow::Pair(label, value) => {
+                let value_width = inner_width.saturating_sub(label_width + 2).max(1);
+                for (i, part) in wrap(value, value_width).into_iter().enumerate() {
+                    let head = if i == 0 {
+                        format!("{label:<label_width$}  ")
+                    } else {
+                        " ".repeat(label_width + 2)
+                    };
+                    lines.push(Line::from(vec![
+                        Span::styled(head, theme::dim()),
+                        Span::raw(part),
+                    ]));
+                }
+            }
+        }
+    }
+    lines
+}
+
+pub fn detail(f: &mut Frame, area: Rect, detail: &mut Detail) {
+    let lines = detail_lines(detail, area.width.saturating_sub(4) as usize);
+    let total = lines.len();
+    let visible = area.height.saturating_sub(2) as usize;
+    detail.scroll = detail.scroll.min(total.saturating_sub(visible));
+    let shown: Vec<Line> = lines
+        .into_iter()
+        .skip(detail.scroll)
+        .take(visible)
+        .collect();
+
+    let hint = if total > visible {
+        format!(
+            " j k scroll  ({} of {})  any other key closes ",
+            detail.scroll + visible.min(total),
+            total
+        )
+    } else {
+        " any key closes ".to_string()
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(theme::border(true))
+        .title(Span::styled(
+            format!(" {} ", detail.title),
+            theme::title(true),
+        ))
+        .title_bottom(Span::styled(hint, theme::dim()))
+        .padding(ratatui::widgets::Padding::horizontal(1));
+    f.render_widget(Paragraph::new(shown).block(block), area);
 }
 
 pub fn help(f: &mut Frame, area: Rect) {

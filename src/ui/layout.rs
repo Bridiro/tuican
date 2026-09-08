@@ -174,9 +174,77 @@ pub fn fit(text: &str, width: usize) -> String {
     chars[..width - 1].iter().collect::<String>() + "…"
 }
 
+/// Break text into lines of at most `width` columns, splitting on spaces and
+/// only mid-word when a single word is itself too long.
+pub fn wrap(text: &str, width: usize) -> Vec<String> {
+    if width == 0 {
+        return Vec::new();
+    }
+    let mut lines = Vec::new();
+    let mut line = String::new();
+    let mut len = 0;
+    for word in text.split_whitespace() {
+        let wlen = word.chars().count();
+        if wlen > width {
+            if len > 0 {
+                lines.push(std::mem::take(&mut line));
+                len = 0;
+            }
+            let mut chars = word.chars().peekable();
+            while chars.peek().is_some() {
+                let chunk: String = chars.by_ref().take(width).collect();
+                lines.push(chunk);
+            }
+            continue;
+        }
+        if len > 0 && len + 1 + wlen > width {
+            lines.push(std::mem::take(&mut line));
+            len = 0;
+        }
+        if len > 0 {
+            line.push(' ');
+            len += 1;
+        }
+        line.push_str(word);
+        len += wlen;
+    }
+    if !line.is_empty() {
+        lines.push(line);
+    }
+    if lines.is_empty() {
+        lines.push(String::new());
+    }
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wrapping_breaks_on_spaces_and_never_exceeds_the_width() {
+        let lines = wrap(
+            "state=Running (2)  ready=Ready (1)  torqueActual=125.4 Nm",
+            24,
+        );
+        assert!(lines.len() > 1);
+        for l in &lines {
+            assert!(l.chars().count() <= 24, "{l:?}");
+        }
+        assert!(lines.join(" ").contains("torqueActual=125.4"));
+    }
+
+    #[test]
+    fn a_word_longer_than_the_width_is_split_rather_than_lost() {
+        let lines = wrap("0123456789abcdefghij", 8);
+        assert_eq!(lines, vec!["01234567", "89abcdef", "ghij"]);
+    }
+
+    #[test]
+    fn empty_input_still_yields_one_line() {
+        assert_eq!(wrap("", 10), vec![String::new()]);
+        assert!(wrap("anything", 0).is_empty());
+    }
 
     #[test]
     fn fitting_a_row_keeps_the_leading_columns_and_fills_the_width() {

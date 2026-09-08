@@ -69,6 +69,7 @@ to the terminal size, including stacking the panes when the window is narrow.
 | `H` / `M` / `L` | top, middle, bottom of the screen |
 | `/` | filter messages by name or hex id |
 | `enter` | edit the selected signal, or act on the panel row |
+| `i` | show the row under the cursor in full, wrapped over as many lines as it needs |
 | `s` | send the selected message once |
 | `p` | start or stop sending it periodically |
 | `d` | stop the periodic send under the cursor |
@@ -86,6 +87,15 @@ to the terminal size, including stacking the panes when the window is narrow.
 
 `/` starts from an empty filter each time, so re-filtering is typing a new
 search rather than cancelling and retyping. `esc` puts the old one back.
+
+Rows are one line each and get cut at the right edge when they are wider than
+the pane. `i` opens the row under the cursor in full: every decoded signal on
+its own line with its unit and value name, the raw bytes, the observed rate. It
+works in every pane, so it also expands a rule into its conditions and actions,
+or a periodic send into the frame actually going out. `enter` does the same in
+the receive table, where there is nothing to edit.
+
+![a received message opened in full, showing every decoded signal](assets/inspect.svg)
 
 The mouse is optional and additive. Click selects, the wheel scrolls the pane
 under the pointer without moving keyboard focus. Nothing is mouse-only, and no

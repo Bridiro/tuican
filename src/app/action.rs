@@ -93,6 +93,8 @@ pub enum Action {
     StopSelectedCyclic,
     ToggleRulesPanel,
     ReloadRules,
+    /// Show the row under the cursor in full.
+    Inspect,
 
     PromptChar(char),
     PromptBackspace,

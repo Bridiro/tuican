@@ -29,6 +29,16 @@ pub fn map(key: KeyEvent, mode: &Mode, pending: Pending) -> Action {
             _ => Action::None,
         },
         Mode::Help => Action::Cancel,
+        // Scroll keys move the overlay; everything else closes it.
+        Mode::Detail(_) => match key.code {
+            KeyCode::Up | KeyCode::Char('k') => Action::Move(-1),
+            KeyCode::Down | KeyCode::Char('j') => Action::Move(1),
+            KeyCode::PageUp => Action::Page(-1),
+            KeyCode::PageDown => Action::Page(1),
+            KeyCode::Home => Action::Home,
+            KeyCode::End => Action::End,
+            _ => Action::Cancel,
+        },
         Mode::Normal => normal(key, pending),
     }
 }
@@ -90,6 +100,7 @@ fn normal(key: KeyEvent, pending: Pending) -> Action {
         KeyCode::F(6) => Action::ToggleRulesPanel,
         KeyCode::F(7) => Action::ReloadRules,
         KeyCode::Char('d') => Action::StopSelectedCyclic,
+        KeyCode::Char('i') => Action::Inspect,
         KeyCode::Char('?') => Action::ToggleHelp,
         _ => Action::None,
     }

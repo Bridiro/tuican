@@ -121,6 +121,18 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             f.render_widget(Clear, rect);
             panes::picker(f, rect, p);
         }
+        Mode::Detail(detail) => {
+            // Wide, because the overlay exists precisely because a line did not
+            // fit, but only as tall as the content actually needs.
+            let w = area.width.saturating_sub(8).clamp(20, 96);
+            let wanted = panes::detail_lines(detail, w.saturating_sub(4) as usize).len() as u16;
+            let h = (wanted + 2).clamp(5, area.height.saturating_sub(2));
+            let rect = layout::centred(area, w, h);
+            f.render_widget(Clear, rect);
+            if let Mode::Detail(detail) = &mut app.mode {
+                panes::detail(f, rect, detail);
+            }
+        }
         Mode::Help => {
             let (w, h) = panes::help_size();
             let rect = layout::centred(area, w, h);

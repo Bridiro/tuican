@@ -49,6 +49,11 @@ impl RxTable {
         self.rows.values()
     }
 
+    /// The row at a cursor position, in the same order the pane shows them.
+    pub fn row(&self, index: usize) -> Option<&RxRow> {
+        self.rows.values().nth(index)
+    }
+
     pub fn clear(&mut self) {
         self.rows.clear();
     }
