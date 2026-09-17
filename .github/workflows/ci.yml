@@ -58,3 +58,37 @@ jobs:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-features
+
+  # 64-bit Raspberry Pi (3, 4, 5). Built with Zig as the C cross-compiler, the
+  # same way the README describes, and uploaded so any run on master yields a
+  # binary you can copy straight to a board.
+  pi:
+    name: raspberry pi (aarch64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: aarch64-zig
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild@0.23.4
+
+      # No udev: libusb is linked statically and the binary then needs nothing
+      # installed on the board beyond libc. See the README.
+      - run: >
+          cargo zigbuild --release
+          --target aarch64-unknown-linux-gnu.2.31
+          --no-default-features --features vendored-libusb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tuican-aarch64-unknown-linux-gnu
+          path: target/aarch64-unknown-linux-gnu/release/tuican
+          if-no-files-found: error

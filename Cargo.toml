@@ -9,8 +9,11 @@ license = "Apache-2.0"
 readme = "README.md"
 keywords = ["can", "canbus", "dbc", "tui", "socketcan"]
 categories = ["command-line-utilities", "embedded", "hardware-support"]
-exclude = ["/dbc"]
+exclude = ["/dbc", "/scripts", "/.github"]
 authors = ["Alessandro Bridi <ale.bridi15@gmail.com>"]
+
+[profile.release]
+strip = true
 
 [features]
 # Force libusb to be compiled in rather than linked from the system, so a

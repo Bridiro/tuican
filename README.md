@@ -8,6 +8,15 @@
 
 ## Install
 
+Prebuilt binaries for macOS (Apple silicon and Intel), Linux x86_64 and 64-bit
+Raspberry Pi are on the [releases page](https://github.com/Bridiro/tuican/releases).
+Unpack, and put `tuican` somewhere on your `PATH`. The Linux ones need nothing
+installed beyond libc. On macOS, a binary downloaded through a browser is
+quarantined and Gatekeeper will refuse it; fetching with `curl` avoids that, or
+clear the flag with `xattr -d com.apple.quarantine tuican`.
+
+Or build it yourself:
+
 ```
 cargo install tuican
 ```
@@ -23,6 +32,30 @@ cargo install --path .
 If libusb-1.0 development files are installed, tuican links them. If not,
 libusb is built from source, which needs a C compiler. Nothing else is required
 on any platform.
+
+### Raspberry Pi
+
+The whole thing cross-compiles from a desktop with
+[cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild), which uses Zig
+as the C cross-compiler for libusb:
+
+```
+cargo install cargo-zigbuild
+rustup target add aarch64-unknown-linux-gnu
+cargo zigbuild --release --target aarch64-unknown-linux-gnu.2.31 \
+    --no-default-features --features vendored-libusb
+```
+
+That is a Pi 3, 4 or 5 on a 64-bit OS. Use `armv7-unknown-linux-gnueabihf`
+for a 32-bit OS on a Pi 2, 3 or 4, and `arm-unknown-linux-gnueabihf` for a Pi
+Zero or Pi 1. The `.2.31` suffix pins the glibc floor to Bullseye, so the binary
+runs on any Raspberry Pi OS since.
+
+Dropping the `udev` feature is deliberate. It removes the only dynamic
+dependency beyond libc, so the binary needs nothing installed on the board.
+SocketCAN and gs_usb are unaffected; only serial-port discovery is reduced.
+Copy the binary over and run `tuican`: the interface picker lists every `can*`
+interface on the board with its state and bitrate.
 
 ## Try it without hardware
 
