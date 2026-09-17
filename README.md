@@ -15,6 +15,13 @@ installed beyond libc. On macOS, a binary downloaded through a browser is
 quarantined and Gatekeeper will refuse it; fetching with `curl` avoids that, or
 clear the flag with `xattr -d com.apple.quarantine tuican`.
 
+With [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) the same
+binaries are one command, no compile:
+
+```
+cargo binstall tuican
+```
+
 Or build it yourself:
 
 ```
