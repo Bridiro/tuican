@@ -20,15 +20,9 @@ cd tuican
 cargo install --path .
 ```
 
-Building needs a C compiler, because libusb is compiled from source by default.
-On Linux it also needs `libudev` headers (`libudev-dev` on Debian and Ubuntu,
-`systemd-devel` on Fedora). If you already have libusb-1.0 installed, or you do
-not need serial adapters, you can skip either:
-
-```
-cargo install tuican --no-default-features --features udev             # system libusb
-cargo install tuican --no-default-features --features vendored-libusb  # no libudev
-```
+If libusb-1.0 development files are installed, tuican links them. If not,
+libusb is built from source, which needs a C compiler. Nothing else is required
+on any platform.
 
 ## Try it without hardware
 

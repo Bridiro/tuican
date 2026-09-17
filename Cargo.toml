@@ -13,13 +13,11 @@ exclude = ["/dbc"]
 authors = ["Alessandro Bridi <ale.bridi15@gmail.com>"]
 
 [features]
-default = ["vendored-libusb", "udev"]
-# Build libusb from source rather than linking the system copy. Needs a C
-# compiler; turn it off if libusb-1.0 is already installed.
+# Force libusb to be compiled in rather than linked from the system, so a
+# binary built for distribution never depends on a shared library the user may
+# not have. A local build does not need it: the system copy is used when
+# present and libusb is built from source when it is not.
 vendored-libusb = ["rusb/vendored"]
-# Fuller serial port enumeration on Linux, so slcan adapters show their vendor
-# and product. Needs libudev at build time.
-udev = ["serialport/libudev"]
 
 [dependencies]
 anyhow = "1.0.104"

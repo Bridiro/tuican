@@ -20,23 +20,28 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
 
-      # libudev for serial port enumeration, libusb so the no-default-features
-      # build below has a system copy to link against.
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libudev-dev libusb-1.0-0-dev
-
+      # No system packages installed on purpose: this is the bare-machine
+      # path, where libusb has to be built from source.
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --all-features
       - run: cargo test --all-features
       - run: cargo build --release
+      - name: Build with libusb compiled in
+        run: cargo build --features vendored-libusb
 
-      # The alternative install paths documented in the README.
-      - name: Build against system libusb
-        run: cargo build --no-default-features --features udev
-      - name: Build without libudev
-        run: cargo build --no-default-features --features vendored-libusb
+  system-libusb:
+    name: link against system libusb
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libusb-1.0-0-dev pkg-config
+      - run: cargo build --release
+      - name: Confirm it linked the system copy
+        run: ldd target/release/tuican | grep -q libusb-1.0
 
   msrv:
     name: minimum supported rust version
@@ -52,8 +57,4 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libudev-dev
       - run: cargo check --all-features
